@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from brain.src.__version__ import __version__
 from brain.src.api.middleware.logging import LoggingMiddleware
 from brain.src.api.middleware.rate_limit import RateLimitMiddleware
+from brain.src.api.routes.agents import router as agents_router
 from brain.src.api.routes.health import router as health_router
 from brain.src.api.routes.input import router as input_router
 from brain.src.config import Config, load_config
@@ -79,12 +80,14 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(input_router)
+    app.include_router(agents_router)
 
     @app.websocket("/ws")
     async def ws_endpoint(websocket: WebSocket) -> None:
         from brain.src.api.websocket.handler import websocket_endpoint
         brain = app.state.brain
-        await websocket_endpoint(websocket, brain)
+        jwt_secret = config.jwt_secret if not config.general.debug else ""
+        await websocket_endpoint(websocket, brain, jwt_secret=jwt_secret)
 
     return app
 

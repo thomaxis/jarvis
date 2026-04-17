@@ -1,54 +1,51 @@
 # AI Session State
-Last updated: 2026-04-17 17:10
+Last updated: 2026-04-17 17:40
 
 ## What I was working on
-Completing Phase 2 remaining items + Phase 3 remaining + Phase 4 (Windows Agent) + Phase 5 (WebSocket).
+JWT auth, agent registration, device routing, voice engine (Phase 5 + 6 completion).
 
 ## What I completed
-- [x] extractor.py -- LLM-powered fact extraction with prompt + JSON parser
-- [x] decay.py -- importance scoring formula, decay processing, archival
-- [x] scheduler.py -- APScheduler for consolidation (6h) + decay (24h)
-- [x] brain/cli.py -- text-based CLI for remote brain testing via REST
-- [x] persona.toml -- default personality settings
-- [x] WebSocket handler + event dispatcher on brain side
-- [x] WebSocket /ws endpoint wired into FastAPI
-- [x] Brain saves state on shutdown
-- [x] Shared agent layer: BaseAgent, BrainConnection, models
-- [x] Windows Agent: agent.py + 6 action modules + safety checks
-- [x] 56 tests still passing
+- [x] JWT auth module: create/verify tokens, extract from Bearer header
+- [x] Per-device permissions: platform-based defaults + custom capabilities
+- [x] Agent registration endpoint (POST /api/v1/agent/register)
+- [x] Agent status endpoint (GET /api/v1/agent/status)
+- [x] JWT verification in WebSocket handler (production mode)
+- [x] Device router for action routing to correct agent
+- [x] Agent --register flag for client-side registration
+- [x] STT via faster-whisper (file + bytes)
+- [x] TTS via Piper (local) and ElevenLabs (cloud)
+- [x] Wake word detection via Porcupine
+- [x] Audio device utilities
+- [x] 65 tests all passing
 
 ## What's in progress
 Nothing.
 
 ## What's next
-Remaining items:
-- JWT auth for WebSocket connections
-- Device routing (orchestration/device_router.py)
-- Agent registration flow (--register generates JWT)
-- End-to-end test with real brain + agent running
-- Phase 6: Voice (STT, TTS, wake word)
+- Wire voice into Windows agent main loop (voice mode)
+- End-to-end testing (brain + agent running together)
+- Phase 7: Task Orchestration (task_manager.py, workflow_executor.py)
+- Phase 0: Cloud Infrastructure (Docker, Nginx, deploy scripts)
 
-## Files created this session
-- brain/src/cognitive/extractor.py, decay.py
-- brain/src/scheduler.py
-- brain/cli.py
-- brain/config/persona.toml
-- brain/src/api/websocket/__init__.py, handler.py, events.py
-- agents/shared/models.py, connection.py, base_agent.py
-- agents/windows/agent.py, safety.py, requirements.txt, config.toml.example
-- agents/windows/actions/__init__.py, apps.py, files.py, system.py, browser.py, terminal.py, clipboard.py
+## Files created
+- brain/src/api/auth/__init__.py, jwt.py, permissions.py
+- brain/src/api/routes/agents.py
+- brain/src/orchestration/device_router.py
+- brain/tests/test_auth.py
+- agents/windows/voice/__init__.py, stt.py, tts.py, listener.py, audio_utils.py
 
 ## Files modified
-- brain/src/api/server.py (scheduler + WebSocket + save_state)
+- brain/src/api/server.py (agents router, jwt_secret to WS)
+- brain/src/api/websocket/handler.py (JWT verification)
+- agents/windows/agent.py (--register flow)
 - TODO.md, CHANGELOG.md
 
 ## Current branch
 dev
 
 ## Notes for the next agent
-- 56 tests green: `PYTHONPATH=. brain/venv/Scripts/python -m pytest brain/tests/ -v`
-- Git remote: https://github.com/thomaxis/jarvis.git
-- websockets not in brain requirements (only needed by agent). Agent has its own requirements.txt
-- APScheduler imported dynamically (not in requirements). Add `apscheduler==3.10.4` if needed.
-- Windows agent runs with: `python agents/windows/agent.py --text-only`
-- Brain CLI: `python brain/cli.py --url http://localhost:8400`
+- 65 tests green: `PYTHONPATH=. brain/venv/Scripts/python -m pytest brain/tests/ -v`
+- Git: https://github.com/thomaxis/jarvis.git, 7 commits on dev
+- Voice deps (faster-whisper, pyaudio, pvporcupine, piper, elevenlabs) are NOT installed. They import dynamically and gracefully disable.
+- JWT auth is skipped in debug mode (config.general.debug = true). Enforced when debug = false.
+- The voice modules are implemented but not yet wired into the agent main loop.

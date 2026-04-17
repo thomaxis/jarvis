@@ -64,6 +64,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Action safety system: destructive actions require user confirmation
 - Windows agent supports text-only mode (`--text-only`) and full WebSocket mode
 - Agent config template (`config.toml.example`) and `requirements.txt`
+- JWT authentication for agents (`brain/src/api/auth/jwt.py`) with token creation and verification
+- Per-device permission system (`permissions.py`) with platform-based and capability-based access control
+- Agent registration endpoint (`POST /api/v1/agent/register`) returns signed JWT
+- Agent status endpoint (`GET /api/v1/agent/status`) shows online devices
+- JWT verification integrated into WebSocket handler (enforced in production, skipped in debug)
+- Device router (`brain/src/orchestration/device_router.py`) for action routing to correct agent
+- Agent `--register` flag connects to brain REST API and retrieves JWT token
+- Voice engine: STT via faster-whisper with file and byte transcription
+- Voice engine: TTS via Piper (local) or ElevenLabs (cloud) with WAV/MP3 playback
+- Voice engine: Wake word detection via Porcupine with fallback to push-to-talk
+- Audio device management utilities (list devices, get defaults)
+- Test suite expanded to 65 tests (9 new for JWT auth, permissions, agent endpoints)
 
 ### Planning Phase - 2026-04-17
 

@@ -58,8 +58,8 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-async def websocket_endpoint(websocket: WebSocket, brain: Any) -> None:
-    """Main WebSocket endpoint. Handles agent lifecycle."""
+async def websocket_endpoint(websocket: WebSocket, brain: Any, jwt_secret: str = "") -> None:
+    """Main WebSocket endpoint. Handles agent lifecycle with JWT auth."""
     device_id: str | None = None
 
     try:
@@ -78,6 +78,27 @@ async def websocket_endpoint(websocket: WebSocket, brain: Any) -> None:
             await websocket.send_json({"event": "error", "detail": "device_id required"})
             await websocket.close()
             return
+
+        # JWT auth (if secret is configured)
+        token = data.get("token", "")
+        agent_payload: dict = {}
+        if jwt_secret:
+            from brain.src.api.auth.jwt import verify_agent_token
+            if not token:
+                await websocket.send_json({"event": "error", "detail": "Authentication required. Include 'token' in agent_connect."})
+                await websocket.close()
+                return
+            agent_payload = verify_agent_token(token, jwt_secret) or {}
+            if not agent_payload:
+                await websocket.send_json({"event": "error", "detail": "Invalid or expired token."})
+                await websocket.close()
+                return
+            # Verify device_id matches token
+            if agent_payload.get("sub") != device_id:
+                await websocket.send_json({"event": "error", "detail": "Token device_id mismatch."})
+                await websocket.close()
+                return
+            log.info("agent_authenticated", device=device_id)
 
         # Re-register with accepted socket
         manager._connections[device_id] = websocket

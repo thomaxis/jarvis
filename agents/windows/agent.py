@@ -119,6 +119,37 @@ def load_config() -> dict:
     return config
 
 
+async def register_agent(config: dict) -> None:
+    """Register this agent with the brain and get a JWT token."""
+    import httpx
+
+    rest_url = config.get("brain_rest_url", "http://localhost:8400")
+    device_id = config.get("device_id", "windows-main")
+    platform = config.get("platform", "windows")
+
+    print(f"Registering agent '{device_id}' with brain at {rest_url}...")
+
+    try:
+        async with httpx.AsyncClient(base_url=rest_url, timeout=10.0) as client:
+            resp = await client.post("/api/v1/agent/register", json={
+                "device_id": device_id,
+                "platform": platform,
+                "device_name": f"{platform} agent",
+                "capabilities": ["os_control", "apps", "files", "browser", "terminal", "clipboard", "system"],
+            })
+
+            if resp.status_code == 200:
+                data = resp.json()
+                token = data.get("token", "")
+                print(f"Registered. Token:\n\n{token}\n")
+                print("Save this token. Set it as JARVIS_AGENT_TOKEN environment variable,")
+                print("or add it to your config.toml under [brain] token_env.")
+            else:
+                print(f"Registration failed: {resp.status_code} {resp.text}")
+    except Exception as e:
+        print(f"Could not connect to brain: {e}")
+
+
 async def text_mode(agent: WindowsAgent) -> None:
     """Interactive text mode for testing without voice."""
     print(f"Jarvis Windows Agent ({agent.device_id})")
@@ -163,7 +194,7 @@ def main() -> None:
     agent = WindowsAgent(config)
 
     if args.register:
-        print("Agent registration not yet implemented. Set JARVIS_AGENT_TOKEN manually.")
+        asyncio.run(register_agent(config))
         return
 
     if args.text_only:

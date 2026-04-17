@@ -67,7 +67,7 @@
 - [x] Set up `agents/shared/` -- base agent class, WebSocket client, voice abstraction
 - [x] Implement `agents/shared/connection.py` -- encrypted WebSocket (wss://) with auto-reconnect + REST fallback
 - [x] Set up `agents/windows/` project with venv + requirements.txt
-- [ ] Implement agent registration flow (`--register` flag, connects to cloud brain, gets JWT)
+- [x] Implement agent registration flow (`--register` flag, connects to cloud brain, gets JWT)
 - [x] Implement Windows actions: `apps.py` (open/close/switch apps)
 - [x] Implement Windows actions: `files.py` (file operations)
 - [x] Implement Windows actions: `system.py` (volume, brightness, lock, shutdown)
@@ -82,18 +82,18 @@
 ## Phase 5: WebSocket Protocol (Priority: HIGH)
 - [x] Implement brain-side WebSocket handler (`brain/src/api/websocket/handler.py`)
 - [x] Implement event dispatcher (`brain/src/api/websocket/events.py`)
-- [ ] Implement JWT auth middleware for WebSocket connections
+- [x] Implement JWT auth middleware for WebSocket connections
 - [x] Implement agent presence tracking in Redis (online/offline, last seen, capabilities)
-- [ ] Implement device routing (`brain/src/orchestration/device_router.py`)
+- [x] Implement device routing (`brain/src/orchestration/device_router.py`)
 - [ ] Verify Nginx correctly upgrades HTTP to WebSocket (wss://)
 - [ ] Test: agent connects over internet, sends input, brain responds, agent executes action
 - [ ] Test: cross-device task (set on one "device", trigger on another)
 
 ## Phase 6: Voice (Priority: MEDIUM)
-- [ ] Implement STT: `agents/windows/voice/stt.py` (faster-whisper)
-- [ ] Implement TTS: `agents/windows/voice/tts.py` (Piper local + ElevenLabs cloud option)
-- [ ] Implement wake word: `agents/windows/voice/listener.py` (Porcupine)
-- [ ] Implement audio device management (`audio_utils.py`)
+- [x] Implement STT: `agents/windows/voice/stt.py` (faster-whisper)
+- [x] Implement TTS: `agents/windows/voice/tts.py` (Piper local + ElevenLabs cloud option)
+- [x] Implement wake word: `agents/windows/voice/listener.py` (Porcupine)
+- [x] Implement audio device management (`audio_utils.py`)
 - [ ] Wire voice into Windows agent main loop
 - [ ] End-to-end test: speak > transcribe > send to cloud brain > respond > speak
 
