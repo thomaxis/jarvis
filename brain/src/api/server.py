@@ -9,6 +9,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from brain.src.__version__ import __version__
+from brain.src.api.middleware.logging import LoggingMiddleware
+from brain.src.api.middleware.rate_limit import RateLimitMiddleware
 from brain.src.api.routes.health import router as health_router
 from brain.src.api.routes.input import router as input_router
 from brain.src.config import Config, load_config
@@ -60,6 +62,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(LoggingMiddleware)
+    app.add_middleware(RateLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.server.allowed_origins,

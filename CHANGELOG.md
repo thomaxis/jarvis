@@ -29,6 +29,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `brain/requirements.txt` with pinned dependencies
 - `brain/src/__version__.py` tracking version 0.0.0
 - Test suite: 22 tests covering all 3 layers + API endpoints (all passing)
+- Alembic migrations setup with initial schema (knowledge, episodes, procedures, archive tables)
+- Rate limiting middleware (`rate_limit.py`) -- per-IP, 120 req/min, Redis-backed, skips /health
+- Request logging middleware (`logging.py`) -- structured logs with method, path, status, duration
 
 ### Planning Phase - 2026-04-17
 

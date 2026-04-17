@@ -21,7 +21,7 @@
 - [x] Initialize Python project with venv + requirements.txt for brain
 - [x] Implement `brain/src/db/database.py` -- SQLAlchemy engine factory (PostgreSQL prod, SQLite dev, auto-detected from config)
 - [x] Implement `brain/src/db/repositories.py` -- repository pattern: `KnowledgeRepo`, `EpisodeRepo`, `ProcedureRepo` (abstracts DB engine)
-- [ ] Set up Alembic for database migrations (`brain/alembic.ini`, initial migration with all tables)
+- [x] Set up Alembic for database migrations (`brain/alembic.ini`, initial migration with all tables)
 - [x] Implement `brain/src/redis_client.py` -- Redis connection with in-memory dict fallback for local dev
 - [x] Implement `brain/src/cognitive/models.py` -- data classes (Memory, Episode, Procedure, Goal, Task, Message)
 - [x] Implement Layer 1: Working Memory (`working_memory.py`) -- Redis-backed (prod) / in-memory (dev), per-device contexts
@@ -30,8 +30,8 @@
 - [x] Implement `brain/src/cognitive/manager.py` -- orchestrator that wires layers 1-3
 - [x] Set up FastAPI server (`brain/src/api/server.py`) -- REST endpoints for input/response + health check
 - [x] Implement `brain/src/api/routes/health.py` -- health endpoint (DB connection, Redis ping, uptime)
-- [ ] Implement `brain/src/api/middleware/rate_limit.py` -- per-agent rate limiting via Redis
-- [ ] Implement `brain/src/api/middleware/logging.py` -- request/response structured logging
+- [x] Implement `brain/src/api/middleware/rate_limit.py` -- per-agent rate limiting via Redis
+- [x] Implement `brain/src/api/middleware/logging.py` -- request/response structured logging
 - [x] Write `brain/config/config.dev.toml` -- local dev overrides
 - [x] Write tests for layers 1-3 (pytest, test SQLite DB, mock Redis)
 - [x] Write `brain/tests/conftest.py` -- shared fixtures (test DB, mock Redis, FastAPI test client)
