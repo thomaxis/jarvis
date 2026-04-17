@@ -200,19 +200,33 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Voice Status -->
-                    <Border Grid.Column="2" CornerRadius="4" Padding="10,5"
-                            BorderThickness="1" VerticalAlignment="Center">
-                        <Border.BorderBrush>
-                            <SolidColorBrush Color="{StaticResource HudBorder}"/>
-                        </Border.BorderBrush>
-                        <Border.Background>
-                            <SolidColorBrush Color="#0800D4FF"/>
-                        </Border.Background>
-                        <TextBlock x:Name="VoiceBadge" Text="VOICE: ON" FontSize="10"
-                                   FontFamily="Consolas" FontWeight="SemiBold"
-                                   Foreground="{StaticResource CyanBrush}"/>
-                    </Border>
+                    <!-- Voice Badge + Settings Gear -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border CornerRadius="4" Padding="10,5" Margin="0,0,10,0"
+                                BorderThickness="1">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource HudBorder}"/>
+                            </Border.BorderBrush>
+                            <Border.Background>
+                                <SolidColorBrush Color="#0800D4FF"/>
+                            </Border.Background>
+                            <TextBlock x:Name="VoiceBadge" Text="VOICE: ON" FontSize="10"
+                                       FontFamily="Consolas" FontWeight="SemiBold"
+                                       Foreground="{StaticResource CyanBrush}"/>
+                        </Border>
+                        <!-- Settings gear -->
+                        <Border CornerRadius="4" Padding="6,4" Cursor="Hand"
+                                BorderThickness="1" MouseLeftButtonDown="SettingsBtn_Click">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource HudBorder}"/>
+                            </Border.BorderBrush>
+                            <Border.Background>
+                                <SolidColorBrush Color="#0800D4FF"/>
+                            </Border.Background>
+                            <TextBlock Text="⚙" FontSize="16" Foreground="{StaticResource TextMidBrush}"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                    </StackPanel>
                 </Grid>
             </Grid>
         </Border>
@@ -237,6 +251,123 @@
                            FontSize="10" FontFamily="Consolas" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,8"/>
             </StackPanel>
         </ScrollViewer>
+
+        <!-- ═══════════════════════════════════════ -->
+        <!--  SETTINGS OVERLAY                      -->
+        <!-- ═══════════════════════════════════════ -->
+        <Border x:Name="SettingsPanel" Grid.Row="1" Visibility="Collapsed" Panel.ZIndex="10"
+                Background="#F0050510">
+            <Border Margin="24,20" CornerRadius="12" Padding="24,20"
+                    BorderThickness="1">
+                <Border.BorderBrush>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="{StaticResource HudBorder}" Offset="0"/>
+                        <GradientStop Color="{StaticResource CyanDim}" Offset="0.5"/>
+                        <GradientStop Color="{StaticResource HudBorder}" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.BorderBrush>
+                <Border.Background>
+                    <SolidColorBrush Color="#FF0A0A1E"/>
+                </Border.Background>
+
+                <StackPanel>
+                    <!-- Header -->
+                    <DockPanel Margin="0,0,0,20">
+                        <TextBlock Text="⚙  S E T T I N G S" FontSize="14" FontFamily="Consolas"
+                                   FontWeight="Bold" Foreground="{StaticResource CyanBrush}"/>
+                        <Border DockPanel.Dock="Right" CornerRadius="4" Padding="8,4" Cursor="Hand"
+                                Background="#15FFFFFF" MouseLeftButtonDown="SettingsClose_Click">
+                            <TextBlock Text="✕" FontSize="12" Foreground="{StaticResource TextMidBrush}"/>
+                        </Border>
+                    </DockPanel>
+
+                    <!-- HUD Divider -->
+                    <Rectangle Height="1" Margin="0,0,0,16" Opacity="0.2">
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="Transparent" Offset="0"/>
+                                <GradientStop Color="{StaticResource Cyan}" Offset="0.5"/>
+                                <GradientStop Color="Transparent" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
+                    <!-- Voice Input (STT) -->
+                    <DockPanel Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="VOICE INPUT (STT)" FontSize="11" FontFamily="Consolas"
+                                       Foreground="{StaticResource TextWhiteBrush}" FontWeight="SemiBold"/>
+                            <TextBlock Text="Speech recognition via microphone" FontSize="10"
+                                       Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="SttToggle" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                  IsChecked="True" Checked="SttToggle_Changed" Unchecked="SttToggle_Changed"
+                                  HorizontalAlignment="Right"/>
+                    </DockPanel>
+
+                    <!-- Voice Output (TTS) -->
+                    <DockPanel Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="VOICE OUTPUT (TTS)" FontSize="11" FontFamily="Consolas"
+                                       Foreground="{StaticResource TextWhiteBrush}" FontWeight="SemiBold"/>
+                            <TextBlock Text="Jarvis speaks responses aloud" FontSize="10"
+                                       Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <CheckBox x:Name="TtsToggle" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                  IsChecked="True" Checked="TtsToggle_Changed" Unchecked="TtsToggle_Changed"
+                                  HorizontalAlignment="Right"/>
+                    </DockPanel>
+
+                    <!-- Voice Speed -->
+                    <StackPanel Margin="0,0,0,16">
+                        <DockPanel>
+                            <TextBlock Text="VOICE SPEED" FontSize="11" FontFamily="Consolas"
+                                       Foreground="{StaticResource TextWhiteBrush}" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="SpeedLabel" DockPanel.Dock="Right" Text="1x" FontSize="11"
+                                       FontFamily="Consolas" Foreground="{StaticResource CyanBrush}"
+                                       HorizontalAlignment="Right"/>
+                        </DockPanel>
+                        <Slider x:Name="SpeedSlider" Minimum="-5" Maximum="5" Value="1"
+                                TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,6,0,0"
+                                ValueChanged="SpeedSlider_Changed"/>
+                    </StackPanel>
+
+                    <!-- Divider -->
+                    <Rectangle Height="1" Margin="0,0,0,16" Opacity="0.1" Fill="{StaticResource CyanDimBrush}"/>
+
+                    <!-- Brain URL -->
+                    <StackPanel Margin="0,0,0,14">
+                        <TextBlock Text="BRAIN URL" FontSize="11" FontFamily="Consolas"
+                                   Foreground="{StaticResource TextWhiteBrush}" FontWeight="SemiBold"
+                                   Margin="0,0,0,6"/>
+                        <TextBox x:Name="BrainUrlBox" FontSize="12" FontFamily="Consolas"
+                                 Foreground="{StaticResource TextWhiteBrush}"
+                                 Background="#FF080818" BorderBrush="{StaticResource HudBorderBrush}"
+                                 BorderThickness="1" Padding="8,6" CaretBrush="{StaticResource CyanBrush}"/>
+                    </StackPanel>
+
+                    <!-- Device ID -->
+                    <StackPanel Margin="0,0,0,14">
+                        <TextBlock Text="DEVICE ID" FontSize="11" FontFamily="Consolas"
+                                   Foreground="{StaticResource TextWhiteBrush}" FontWeight="SemiBold"
+                                   Margin="0,0,0,6"/>
+                        <TextBox x:Name="DeviceIdBox" FontSize="12" FontFamily="Consolas"
+                                 Foreground="{StaticResource TextWhiteBrush}"
+                                 Background="#FF080818" BorderBrush="{StaticResource HudBorderBrush}"
+                                 BorderThickness="1" Padding="8,6" CaretBrush="{StaticResource CyanBrush}"/>
+                    </StackPanel>
+
+                    <!-- Divider -->
+                    <Rectangle Height="1" Margin="0,4,0,16" Opacity="0.1" Fill="{StaticResource CyanDimBrush}"/>
+
+                    <!-- Info -->
+                    <TextBlock FontSize="10" FontFamily="Consolas" Foreground="{StaticResource TextDimBrush}"
+                               TextWrapping="Wrap">
+                        J.A.R.V.I.S. v0.1.0 // .NET 9 WPF // Windows Speech API
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </Border>
 
         <!-- ═══════════════════════════════════════ -->
         <!--  INPUT BAR                             -->

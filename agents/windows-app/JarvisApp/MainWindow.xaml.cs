@@ -21,9 +21,11 @@ public partial class MainWindow : Window
     private ClientWebSocket? _ws;
     private bool _connected;
     private bool _listening;
-    private readonly string _deviceId;
-    private readonly string _brainWs;
+    private string _deviceId;
+    private string _brainWs;
     private readonly CancellationTokenSource _cts = new();
+    private bool _sttEnabled = true;
+    private bool _ttsEnabled = true;
 
     private SpeechRecognitionEngine? _recognizer;
     private SpeechSynthesizer? _synth;
@@ -58,6 +60,8 @@ public partial class MainWindow : Window
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         InitVoice();
+        BrainUrlBox.Text = _brainWs;
+        DeviceIdBox.Text = _deviceId;
         await ConnectLoop();
     }
 
@@ -115,7 +119,7 @@ public partial class MainWindow : Window
 
     private void Speak(string text)
     {
-        if (!_ttsReady || _synth == null) return;
+        if (!_ttsReady || !_ttsEnabled || _synth == null) return;
         Task.Run(() => { try { _synth.Speak(text); } catch { } });
     }
 
@@ -257,7 +261,7 @@ public partial class MainWindow : Window
 
     private async void MicBtn_Click(object? sender, RoutedEventArgs? e)
     {
-        if (_listening || !_sttReady) return;
+        if (_listening || !_sttReady || !_sttEnabled) return;
         _listening = true;
         MicBtn.Content = "🔴";
         AddSystemMessage("// LISTENING...");
@@ -460,6 +464,64 @@ public partial class MainWindow : Window
     private void ScrollToBottom()
     {
         Dispatcher.InvokeAsync(() => ChatScroll.ScrollToEnd(), DispatcherPriority.Background);
+    }
+
+    // ══════════════════════════════════
+    //  Settings
+    // ══════════════════════════════════
+
+    private void SettingsBtn_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        SettingsPanel.Visibility = SettingsPanel.Visibility == Visibility.Visible
+            ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void SettingsClose_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        SettingsPanel.Visibility = Visibility.Collapsed;
+
+        // Apply brain URL / device ID changes
+        var newUrl = BrainUrlBox.Text.Trim();
+        var newDevice = DeviceIdBox.Text.Trim();
+        if (!string.IsNullOrEmpty(newUrl) && newUrl != _brainWs)
+        {
+            _brainWs = newUrl;
+            AddSystemMessage($"// BRAIN URL UPDATED: {_brainWs}");
+        }
+        if (!string.IsNullOrEmpty(newDevice) && newDevice != _deviceId)
+        {
+            _deviceId = newDevice;
+            AddSystemMessage($"// DEVICE ID UPDATED: {_deviceId}");
+        }
+    }
+
+    private void SttToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        _sttEnabled = SttToggle.IsChecked == true;
+        MicBtn.Visibility = _sttEnabled && _sttReady ? Visibility.Visible : Visibility.Collapsed;
+        VoiceBadge.Text = _sttEnabled && _sttReady ? "VOICE: ON" : "VOICE: OFF";
+        VoiceBadge.Foreground = _sttEnabled && _sttReady ? CyanBrush : RedBrush;
+    }
+
+    private void TtsToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        _ttsEnabled = TtsToggle.IsChecked == true;
+    }
+
+    private void SpeedSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!IsLoaded || _synth == null || SpeedLabel == null) return;
+        var rate = (int)SpeedSlider.Value;
+        _synth.Rate = rate;
+        var label = rate switch
+        {
+            < 0 => $"{rate}",
+            0 => "0",
+            _ => $"+{rate}",
+        };
+        SpeedLabel.Text = label;
     }
 }
 
