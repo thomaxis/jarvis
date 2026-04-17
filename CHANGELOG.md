@@ -102,6 +102,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Test suite expanded to 82 tests (10 new for plugins + predictions)
 
 - Jarvis GUI desktop app (`agents/windows/app.py`): full chat window with dark theme, system tray icon, WebSocket connection, auto-reconnect, action execution, message bubbles, connection status indicator
+- Voice support in GUI app: push-to-talk mic button, Ctrl+Space shortcut, Google STT transcription, Windows TTS responses
+- VoiceEngine class: SpeechRecognition for STT (Google free API), pyttsx3 for TTS (Windows SAPI voices)
+- Voice status shown in title bar (mic icon + "Voice ready" / "No mic")
+- Jarvis speaks every response aloud via TTS when voice is enabled
 - Spotify plugin rewritten with real Spotify Web API: OAuth PKCE auth, search tracks, play by name, pause, skip, previous, volume, now playing
 - Plugin config persistence (`plugins/config.py`): JSON config per plugin stored in brain/data/plugins/
 - Spotify OAuth catches callback on localhost:8888, exchanges code for tokens, auto-refreshes

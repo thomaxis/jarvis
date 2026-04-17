@@ -95,7 +95,8 @@
 - [x] Implement wake word: `agents/windows/voice/listener.py` (Porcupine)
 - [x] Implement audio device management (`audio_utils.py`)
 - [x] Wire voice into Windows agent main loop
-- [ ] End-to-end test: speak > transcribe > send to cloud brain > respond > speak
+- [x] End-to-end test: speak > transcribe > send to cloud brain > respond > speak
+- [x] Voice in GUI app: mic button, Ctrl+Space, Google STT, Windows TTS
 
 ## Phase 7: Task Orchestration (Priority: MEDIUM)
 - [x] Implement `brain/src/orchestration/task_manager.py` -- task breakdown, dependency tracking
