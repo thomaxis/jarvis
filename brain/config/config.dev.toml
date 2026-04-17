@@ -1,0 +1,9 @@
+[general]
+debug = true
+
+[database]
+type = "sqlite"
+sqlite_path = "data/knowledge.db"
+
+[redis]
+enabled = false

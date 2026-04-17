@@ -1,0 +1,39 @@
+[general]
+name = "Jarvis"
+language = "en"
+debug = false
+
+[server]
+host = "0.0.0.0"
+port = 8400
+allowed_origins = ["*"]
+jwt_secret_env = "JARVIS_JWT_SECRET"
+
+[llm]
+provider = "anthropic"
+model = "claude-sonnet-4-20250514"
+api_key_env = "ANTHROPIC_API_KEY"
+fallback_provider = "openai"
+fallback_model = "gpt-4o"
+temperature = 0.7
+max_tokens = 1024
+
+[brain]
+enabled = true
+auto_extract = true
+ask_before_storing = false
+decay_enabled = true
+decay_threshold_days = 30
+consolidation_interval_hours = 6
+max_context_memories = 10
+association_decay_days = 60
+procedure_detection_threshold = 3
+working_memory_capacity = 7
+
+[database]
+type = "postgresql"
+url_env = "DATABASE_URL"
+
+[redis]
+enabled = true
+url_env = "REDIS_URL"

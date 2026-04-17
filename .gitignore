@@ -1,0 +1,47 @@
+# Brain data (runtime generated, never committed)
+brain/data/
+*.db
+*.db-journal
+brain/semantic/
+brain/personality.json
+brain/associations.graphml
+brain/short_term_recovery.json
+brain/summaries/
+brain/backups/
+
+# Environment and secrets
+.env
+*.env
+!.env.example
+
+# Agent device configs (contain URLs and tokens)
+agents/*/config.toml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SSL certs (auto-generated)
+infra/nginx/ssl/
