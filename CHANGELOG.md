@@ -42,6 +42,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Brain Manager upgraded to orchestrate all 10 layers with save_state() and consolidate()
 - Added networkx==3.4.2 to requirements
 - Test suite expanded to 41 tests (19 new for layers 4-10)
+- Conversation Engine: ChatEngine (`chat.py`) with Claude/OpenAI async integration and structured JSON parsing
+- Prompt Builder (`prompt_builder.py`) assembles system prompt from full 10-layer context
+- Intent Detection (`intent.py`) with regex-based action/question/command/memory/conversation classification
+- Entity Extraction: apps, URLs, file paths, time expressions
+- Persona rules (`persona.py`): banned phrase filtering, verbosity trimming, context-aware greetings
+- Test suite expanded to 56 tests (15 new for conversation engine)
 
 ### Planning Phase - 2026-04-17
 

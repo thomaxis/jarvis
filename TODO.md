@@ -56,10 +56,10 @@
 - [ ] Deploy and verify on cloud server
 
 ## Phase 3: Conversation Engine (Priority: HIGH)
-- [ ] Implement `brain/src/conversation/chat.py` -- Claude API integration, structured output parsing
-- [ ] Implement `brain/src/conversation/prompt_builder.py` -- assemble system prompt with brain context
-- [ ] Implement `brain/src/conversation/intent.py` -- intent detection, entity extraction
-- [ ] Implement `brain/src/conversation/persona.py` -- Jarvis personality rules, tone logic
+- [x] Implement `brain/src/conversation/chat.py` -- Claude API integration, structured output parsing
+- [x] Implement `brain/src/conversation/prompt_builder.py` -- assemble system prompt with brain context
+- [x] Implement `brain/src/conversation/intent.py` -- intent detection, entity extraction
+- [x] Implement `brain/src/conversation/persona.py` -- Jarvis personality rules, tone logic
 - [ ] Create `brain/config/persona.toml` -- default personality settings
 - [ ] End-to-end test: text input > brain retrieval > LLM call > response with memory update
 

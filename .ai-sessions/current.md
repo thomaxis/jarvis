@@ -1,64 +1,51 @@
 # AI Session State
-Last updated: 2026-04-17 16:30
+Last updated: 2026-04-17 16:45
 
 ## What I was working on
-Phase 1 completion (Alembic, middleware) + Phase 2 Brain Intelligence (all 10 cognitive layers).
+Phase 1 completion + Phase 2 (all 10 layers) + Phase 3 (conversation engine).
 
 ## What I completed
-- [x] Alembic migrations with initial schema (4 tables)
-- [x] Rate limiting middleware (120 req/min per IP, Redis-backed)
-- [x] Request logging middleware (structured logs)
-- [x] Layer 4: Associative Memory -- NetworkX graph, spreading activation, decay
-- [x] Layer 5: Episodic Memory -- event recording with time-of-day
-- [x] Layer 6: Procedural Memory -- routine lifecycle, trigger matching
-- [x] Layer 7: Personality Memory -- JSON profile, per-device style
-- [x] Layer 8: Semantic Memory -- ChromaDB with graceful fallback
-- [x] Layer 9: Consolidation Engine -- decay, dedup, rescoring
-- [x] Layer 10: Retrieval Pipeline -- full context assembly
-- [x] Brain Manager upgraded to wire all 10 layers
-- [x] 41 tests all passing
-- [x] Committed and pushed to dev
+- [x] Phase 1 remaining: Alembic migrations, rate limiting, request logging middleware
+- [x] Phase 2: All 10 cognitive layers implemented and tested
+- [x] Phase 3: Conversation engine (chat, prompt_builder, intent, persona)
+- [x] 56 tests all passing
+- [x] All committed and pushed to dev (4 commits total)
 
-## What's in progress (NOT DONE YET)
-Nothing in progress.
+## What's in progress
+Nothing.
 
 ## What's next
-Phase 2 remaining:
+Phase 2 remaining items:
 - extractor.py (LLM-powered fact extraction)
-- decay.py (standalone decay module)
 - APScheduler for consolidation cron
 - Text-based CLI for remote brain testing
 
-Phase 3: Conversation Engine
-- chat.py (Claude API integration)
-- prompt_builder.py (system prompt assembly)
-- intent.py (intent detection)
-- persona.py (Jarvis personality rules)
+Phase 3 remaining:
+- persona.toml config file
+- End-to-end test with real LLM call
 
-## Key decisions made
-- SemanticMemory gracefully disables if ChromaDB not installed (optional dep)
-- Consolidation decay/rescoring logic built into consolidation.py rather than separate decay.py
-- Retrieval pipeline does simple concept extraction (split + stop words) rather than NLP
-- Association graph auto-creates nodes on add_association() call
+Phase 4: Windows Agent
+- Base agent class, WebSocket client, OS actions
+
+## Key decisions
+- ChatEngine supports Anthropic (primary) and OpenAI (fallback) with async clients
+- Prompt builder uses template string with section-based context injection
+- Intent detection is regex-based (fast, no ML dependency). 5 intent types: action, question, conversation, command, memory_query
+- Persona strips banned phrases post-LLM-response and trims to 4 sentences in concise mode
 
 ## Files created this session
-- brain/alembic.ini
-- brain/src/db/migrations/env.py, script.py.mako, versions/ea238bc9f085_initial...py
+- brain/alembic.ini, src/db/migrations/
 - brain/src/api/middleware/rate_limit.py, logging.py
 - brain/src/cognitive/associations.py, episodic.py, procedural.py, personality.py, semantic.py, consolidation.py, retrieval.py
-- brain/tests/test_cognitive/test_associations.py, test_episodic.py, test_procedural.py, test_personality.py, test_retrieval.py
-
-## Files modified this session
-- brain/src/api/server.py (added middleware)
-- brain/src/cognitive/manager.py (rewired for all 10 layers)
-- brain/requirements.txt (added networkx)
-- CHANGELOG.md, TODO.md
+- brain/src/conversation/chat.py, prompt_builder.py, intent.py, persona.py
+- brain/tests/test_conversation.py, test_cognitive/test_*.py (5 new test files)
 
 ## Current branch
 dev
 
 ## Notes for the next agent
-- 41 tests green. Run: `PYTHONPATH=. brain/venv/Scripts/python -m pytest brain/tests/ -v`
-- ChromaDB not installed in venv yet (semantic tests pass because it gracefully falls back)
-- Git remote: https://github.com/thomaxis/jarvis.git
-- Two commits pushed to dev so far
+- 56 tests green: `PYTHONPATH=. brain/venv/Scripts/python -m pytest brain/tests/ -v`
+- Git remote: https://github.com/thomaxis/jarvis.git (4 commits on dev)
+- ChromaDB not installed in venv (semantic gracefully falls back)
+- anthropic SDK not in requirements yet (chat.py imports it dynamically)
+- To add anthropic: `pip install anthropic` and add to requirements.txt
