@@ -1,0 +1,17 @@
+version: "3.8"
+
+# Dev overrides: expose DB/Redis ports, enable debug mode
+services:
+  brain:
+    environment:
+      - JARVIS_DEBUG=true
+    ports:
+      - "8400:8400"
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"

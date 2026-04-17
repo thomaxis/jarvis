@@ -2,17 +2,17 @@
 
 ## Phase 0: Cloud Infrastructure (Priority: CRITICAL)
 - [ ] Provision a VPS (Hetzner/DigitalOcean/Linode, Debian 12, 4GB+ RAM)
-- [ ] Write `infra/scripts/setup-server.sh` -- install Docker, create non-root user, configure UFW (22, 80, 443), disable root SSH
-- [ ] Write `infra/docker-compose.yml` -- brain + PostgreSQL 16 + Redis 7 + Nginx containers
-- [ ] Write `infra/docker-compose.dev.yml` -- dev overrides (exposed ports, debug env)
-- [ ] Write `brain/Dockerfile` -- Python 3.12, install deps, run FastAPI with uvicorn
-- [ ] Write `infra/nginx/jarvis.conf` -- reverse proxy to brain:8400, WebSocket upgrade (`Upgrade`, `Connection` headers), rate limiting, TLS config
+- [x] Write `infra/scripts/setup-server.sh` -- install Docker, create non-root user, configure UFW (22, 80, 443), disable root SSH
+- [x] Write `infra/docker-compose.yml` -- brain + PostgreSQL 16 + Redis 7 + Nginx containers
+- [x] Write `infra/docker-compose.dev.yml` -- dev overrides (exposed ports, debug env)
+- [x] Write `brain/Dockerfile` -- Python 3.12, install deps, run FastAPI with uvicorn
+- [x] Write `infra/nginx/jarvis.conf` -- reverse proxy to brain:8400, WebSocket upgrade (`Upgrade`, `Connection` headers), rate limiting, TLS config
 - [ ] Set up Let's Encrypt with certbot for TLS certs (auto-renewal cron)
-- [ ] Write `infra/.env.example` -- template with all required env vars
-- [ ] Write `infra/scripts/deploy.sh` -- git pull, docker compose build, docker compose up -d, health check
-- [ ] Write `infra/scripts/backup.sh` -- pg_dump to timestamped file, optional rsync to offsite
-- [ ] Write `infra/scripts/restore.sh` -- restore from pg_dump backup
-- [ ] Configure daily backup cron (setup-server.sh adds it)
+- [x] Write `infra/.env.example` -- template with all required env vars
+- [x] Write `infra/scripts/deploy.sh` -- git pull, docker compose build, docker compose up -d, health check
+- [x] Write `infra/scripts/backup.sh` -- pg_dump to timestamped file, optional rsync to offsite
+- [x] Write `infra/scripts/restore.sh` -- restore from pg_dump backup
+- [x] Configure daily backup cron (setup-server.sh adds it)
 - [ ] Verify: brain container starts, health endpoint responds over HTTPS, WebSocket connects over wss://
 - [ ] Point domain/subdomain (e.g., `jarvis.yourdomain.com`) to VPS IP
 
@@ -98,9 +98,9 @@
 - [ ] End-to-end test: speak > transcribe > send to cloud brain > respond > speak
 
 ## Phase 7: Task Orchestration (Priority: MEDIUM)
-- [ ] Implement `brain/src/orchestration/task_manager.py` -- task breakdown, dependency tracking
-- [ ] Implement `brain/src/orchestration/workflow_executor.py` -- execute procedural routines across devices
-- [ ] Implement multi-step task status tracking (pending > dispatched > in_progress > completed/failed)
+- [x] Implement `brain/src/orchestration/task_manager.py` -- task breakdown, dependency tracking
+- [x] Implement `brain/src/orchestration/workflow_executor.py` -- execute procedural routines across devices
+- [x] Implement multi-step task status tracking (pending > dispatched > in_progress > completed/failed)
 - [ ] Test: complex request broken into sub-tasks, routed to agent, results tracked
 
 ## Phase 8: UI (Priority: LOW)

@@ -76,6 +76,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Voice engine: Wake word detection via Porcupine with fallback to push-to-talk
 - Audio device management utilities (list devices, get defaults)
 - Test suite expanded to 65 tests (9 new for JWT auth, permissions, agent endpoints)
+- Task Manager (`task_manager.py`) with subtask creation, dependency tracking, parent auto-completion
+- Workflow Executor (`workflow_executor.py`) dispatches multi-step routines to device agents
+- Cloud infrastructure: Dockerfile, docker-compose.yml (brain + PostgreSQL 16 + Redis 7)
+- Docker Compose dev overrides (exposed ports, debug mode)
+- Nginx config with TLS, WebSocket upgrade, rate limiting, security headers
+- Server setup script (Docker, UFW, fail2ban, certbot, non-root user)
+- Deploy script (git pull, rebuild, restart, health check)
+- Backup/restore scripts for PostgreSQL with daily cron
+- .env.example template for server environment
+- Test suite expanded to 72 tests (7 new for task orchestration)
 
 ### Planning Phase - 2026-04-17
 
