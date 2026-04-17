@@ -86,6 +86,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Backup/restore scripts for PostgreSQL with daily cron
 - .env.example template for server environment
 - Test suite expanded to 72 tests (7 new for task orchestration)
+- Voice mode wired into Windows agent main loop (wake word > record > transcribe > send > speak response)
+- Windows system tray (`ui/tray.py`) with pystray: connection status icon, text mode toggle, quit
+- macOS agent with osascript-based actions: apps, files, system (volume/lock/power), terminal
+- Linux agent with xdg-open/amixer/systemctl/pkill actions: apps, files, system, terminal
+- Both agents share the BaseAgent/BrainConnection pattern from agents/shared/
+- Offline cache (`agents/shared/offline.py`): knowledge caching, command queuing, queue flush on reconnect
+- Plugin system (`plugins/base.py`): JarvisPlugin interface + PluginManager for loading/unloading
+- Spotify plugin as reference implementation with play/pause/next/previous/search actions
 
 ### Planning Phase - 2026-04-17
 

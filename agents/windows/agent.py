@@ -184,6 +184,107 @@ async def text_mode(agent: WindowsAgent) -> None:
         print("\nBye.")
 
 
+async def voice_mode(agent: WindowsAgent, config: dict) -> None:
+    """Full voice mode: wake word > listen > transcribe > send > respond > speak."""
+    from agents.windows.voice.stt import SpeechToText
+    from agents.windows.voice.tts import TextToSpeech
+    from agents.windows.voice.listener import VoiceListener
+
+    voice_cfg = config.get("voice", {})
+    stt = SpeechToText(model_size=voice_cfg.get("stt_model", "base.en"))
+    tts = TextToSpeech(
+        engine=voice_cfg.get("tts_engine", "piper"),
+        voice=voice_cfg.get("tts_voice", "en_US-lessac-medium"),
+    )
+    listener = VoiceListener(
+        wake_word=voice_cfg.get("wake_word", "jarvis"),
+        silence_threshold=voice_cfg.get("silence_threshold", 500),
+    )
+
+    # Initialize voice components
+    stt_ok = stt.initialize()
+    tts_ok = tts.initialize()
+    listener_ok = listener.initialize()
+
+    if not stt_ok:
+        log.error("STT failed to initialize. Falling back to text mode.")
+        await text_mode(agent)
+        return
+
+    print(f"Jarvis Windows Agent ({agent.device_id}) - Voice Mode")
+    print(f"  STT: {'ready' if stt_ok else 'disabled'}")
+    print(f"  TTS: {'ready' if tts_ok else 'disabled'}")
+    print(f"  Wake word: {'ready' if listener_ok and listener._porcupine else 'push-to-talk'}")
+    print("Connecting to brain...")
+
+    # Store TTS ref on agent for response playback
+    agent._tts = tts if tts_ok else None
+
+    # Override message handler to speak responses
+    original_handler = agent._handle_message
+
+    async def voice_message_handler(message: dict) -> None:
+        await original_handler(message)
+        event = message.get("event", "")
+        if event == "response" and tts_ok:
+            text = message.get("text", "")
+            if text:
+                tts.speak(text)
+
+    agent.connection._on_message = voice_message_handler
+
+    connect_task = asyncio.create_task(agent.connection.connect())
+    await asyncio.sleep(2)
+
+    if agent.connection.connected:
+        print("Connected. Listening...\n")
+    else:
+        print("Not connected yet (will keep trying).\n")
+
+    try:
+        while True:
+            if listener_ok and listener._porcupine:
+                # Wake word mode
+                await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: listener.listen_for_wake_word(lambda: None)
+                )
+            else:
+                # Push-to-talk: wait for Enter
+                await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: input("[Press Enter to speak] ")
+                )
+
+            # Record audio
+            wav_path = await asyncio.get_event_loop().run_in_executor(
+                None, listener.record_until_silence
+            )
+
+            if not wav_path:
+                continue
+
+            # Transcribe
+            text = stt.transcribe(wav_path)
+            if not text:
+                continue
+
+            print(f"You: {text}")
+            await agent.connection.send_input(text)
+
+            # Clean up temp file
+            try:
+                Path(wav_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+
+    except (EOFError, KeyboardInterrupt):
+        pass
+    finally:
+        listener.cleanup()
+        await agent.connection.disconnect()
+        connect_task.cancel()
+        print("\nBye.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Jarvis Windows Agent")
     parser.add_argument("--text-only", action="store_true", help="Text mode (no voice)")
@@ -200,7 +301,7 @@ def main() -> None:
     if args.text_only:
         asyncio.run(text_mode(agent))
     else:
-        asyncio.run(agent.run())
+        asyncio.run(voice_mode(agent, config))
 
 
 if __name__ == "__main__":
