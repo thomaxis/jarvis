@@ -46,11 +46,11 @@
 - [x] Implement Layer 8: Semantic Memory (`semantic.py`) -- ChromaDB embeddings, similarity search, deduplication
 - [x] Implement Layer 9: Consolidation (`consolidation.py`) -- session summarization, fact extraction, decay, dedup, contradiction resolution
 - [x] Implement Layer 10: Retrieval Pipeline (`retrieval.py`) -- query all layers, rank, select top N, build context
-- [ ] Implement `extractor.py` -- LLM-powered fact extraction from conversations
-- [ ] Implement `decay.py` -- importance scoring formula, decay processing, archival to `archive` table
-- [ ] Set up APScheduler for consolidation cron (every 6 hours + session end)
+- [x] Implement `extractor.py` -- LLM-powered fact extraction from conversations
+- [x] Implement `decay.py` -- importance scoring formula, decay processing, archival to `archive` table
+- [x] Set up APScheduler for consolidation cron (every 6 hours + session end)
 - [x] Wire all 10 layers into `manager.py`
-- [ ] Build text-based CLI for testing brain remotely (connects to cloud brain)
+- [x] Build text-based CLI for testing brain remotely (connects to cloud brain)
 - [x] Write Alembic migration for episodes + procedures tables
 - [x] Write tests for layers 4-10
 - [ ] Deploy and verify on cloud server
@@ -60,30 +60,30 @@
 - [x] Implement `brain/src/conversation/prompt_builder.py` -- assemble system prompt with brain context
 - [x] Implement `brain/src/conversation/intent.py` -- intent detection, entity extraction
 - [x] Implement `brain/src/conversation/persona.py` -- Jarvis personality rules, tone logic
-- [ ] Create `brain/config/persona.toml` -- default personality settings
+- [x] Create `brain/config/persona.toml` -- default personality settings
 - [ ] End-to-end test: text input > brain retrieval > LLM call > response with memory update
 
 ## Phase 4: Windows Agent (Priority: HIGH)
-- [ ] Set up `agents/shared/` -- base agent class, WebSocket client, voice abstraction
-- [ ] Implement `agents/shared/connection.py` -- encrypted WebSocket (wss://) with auto-reconnect + REST fallback
-- [ ] Set up `agents/windows/` project with venv + requirements.txt
+- [x] Set up `agents/shared/` -- base agent class, WebSocket client, voice abstraction
+- [x] Implement `agents/shared/connection.py` -- encrypted WebSocket (wss://) with auto-reconnect + REST fallback
+- [x] Set up `agents/windows/` project with venv + requirements.txt
 - [ ] Implement agent registration flow (`--register` flag, connects to cloud brain, gets JWT)
-- [ ] Implement Windows actions: `apps.py` (open/close/switch apps)
-- [ ] Implement Windows actions: `files.py` (file operations)
-- [ ] Implement Windows actions: `system.py` (volume, brightness, lock, shutdown)
-- [ ] Implement Windows actions: `browser.py` (open URLs, search)
-- [ ] Implement Windows actions: `terminal.py` (PowerShell/CMD execution)
-- [ ] Implement Windows actions: `clipboard.py` (read/write)
-- [ ] Implement `agents/windows/agent.py` -- main loop: connect to cloud brain, receive actions, execute
-- [ ] Implement action safety checks (`safety.py` -- confirmation for destructive actions)
-- [ ] Create `agents/windows/config.toml` (with wss:// cloud brain URL)
+- [x] Implement Windows actions: `apps.py` (open/close/switch apps)
+- [x] Implement Windows actions: `files.py` (file operations)
+- [x] Implement Windows actions: `system.py` (volume, brightness, lock, shutdown)
+- [x] Implement Windows actions: `browser.py` (open URLs, search)
+- [x] Implement Windows actions: `terminal.py` (PowerShell/CMD execution)
+- [x] Implement Windows actions: `clipboard.py` (read/write)
+- [x] Implement `agents/windows/agent.py` -- main loop: connect to cloud brain, receive actions, execute
+- [x] Implement action safety checks (`safety.py` -- confirmation for destructive actions)
+- [x] Create `agents/windows/config.toml` (with wss:// cloud brain URL)
 - [ ] Test: send command from cloud brain, verify Windows agent executes it
 
 ## Phase 5: WebSocket Protocol (Priority: HIGH)
-- [ ] Implement brain-side WebSocket handler (`brain/src/api/websocket/handler.py`)
-- [ ] Implement event dispatcher (`brain/src/api/websocket/events.py`)
+- [x] Implement brain-side WebSocket handler (`brain/src/api/websocket/handler.py`)
+- [x] Implement event dispatcher (`brain/src/api/websocket/events.py`)
 - [ ] Implement JWT auth middleware for WebSocket connections
-- [ ] Implement agent presence tracking in Redis (online/offline, last seen, capabilities)
+- [x] Implement agent presence tracking in Redis (online/offline, last seen, capabilities)
 - [ ] Implement device routing (`brain/src/orchestration/device_router.py`)
 - [ ] Verify Nginx correctly upgrades HTTP to WebSocket (wss://)
 - [ ] Test: agent connects over internet, sends input, brain responds, agent executes action

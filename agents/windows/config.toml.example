@@ -1,0 +1,23 @@
+[agent]
+device_id = "windows-main"
+device_name = "Desktop PC"
+platform = "windows"
+
+[brain]
+url = "wss://jarvis.yourdomain.com/ws"
+rest_url = "https://jarvis.yourdomain.com/api/v1"
+token_env = "JARVIS_AGENT_TOKEN"
+
+[voice]
+enabled = true
+wake_word = "jarvis"
+stt_model = "base.en"
+tts_engine = "piper"
+tts_voice = "en_US-lessac-medium"
+input_device = "default"
+output_device = "default"
+silence_threshold = 500
+
+[ui]
+tray_icon = true
+overlay = false

@@ -48,6 +48,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Entity Extraction: apps, URLs, file paths, time expressions
 - Persona rules (`persona.py`): banned phrase filtering, verbosity trimming, context-aware greetings
 - Test suite expanded to 56 tests (15 new for conversation engine)
+- LLM-powered fact extractor (`extractor.py`) with extraction prompt and JSON parsing
+- Memory decay module (`decay.py`) with importance scoring formula and archival to archive table
+- APScheduler integration (`scheduler.py`) for consolidation (6h) and decay (24h) cron jobs
+- Scheduler wired into FastAPI lifespan (auto-start/stop)
+- Brain CLI (`brain/cli.py`) for testing brain remotely via REST API
+- Default persona config (`brain/config/persona.toml`)
+- WebSocket handler (`brain/src/api/websocket/handler.py`) with ConnectionManager and agent lifecycle
+- WebSocket event dispatcher (`events.py`) handling user_input, action_result, context_update
+- WebSocket `/ws` endpoint wired into FastAPI server
+- Brain saves state (graph + personality) on shutdown
+- Shared agent layer: BaseAgent, BrainConnection (WebSocket + REST fallback), data models
+- BrainConnection with auto-reconnect (exponential backoff up to 60s)
+- Windows Agent with 6 action modules: apps, files, system, browser, terminal, clipboard
+- Action safety system: destructive actions require user confirmation
+- Windows agent supports text-only mode (`--text-only`) and full WebSocket mode
+- Agent config template (`config.toml.example`) and `requirements.txt`
 
 ### Planning Phase - 2026-04-17
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
 from brain.src.__version__ import __version__
@@ -46,9 +46,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     _brain_manager = BrainManager()
     app.state.brain = _brain_manager
 
+    from brain.src.scheduler import init_scheduler, stop_scheduler
+    await init_scheduler(_brain_manager, interval_hours=config.brain.consolidation_interval_hours)
+
     log.info("brain_ready", port=config.server.port)
     yield
 
+    await stop_scheduler()
+    await _brain_manager.save_state()
     await close_redis()
     await close_db()
     log.info("brain_shutdown")
@@ -74,6 +79,12 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(input_router)
+
+    @app.websocket("/ws")
+    async def ws_endpoint(websocket: WebSocket) -> None:
+        from brain.src.api.websocket.handler import websocket_endpoint
+        brain = app.state.brain
+        await websocket_endpoint(websocket, brain)
 
     return app
 
