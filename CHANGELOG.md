@@ -101,6 +101,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - README.md with architecture overview, quick start, and project structure
 - Test suite expanded to 82 tests (10 new for plugins + predictions)
 
+- Jarvis GUI desktop app (`agents/windows/app.py`): full chat window with dark theme, system tray icon, WebSocket connection, auto-reconnect, action execution, message bubbles, connection status indicator
+
 ### Changed
 - ChatEngine rewritten to support 6 LLM providers via OpenAI-compatible API: Groq (free), OpenRouter (free models), Gemini (free), HuggingFace (free), OpenAI (paid), Anthropic (paid)
 - Default provider changed from Anthropic to Groq (free tier, fast inference)

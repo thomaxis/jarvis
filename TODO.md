@@ -107,6 +107,7 @@
 - [x] Implement Windows system tray (`agents/windows/ui/tray.py`) -- icon, menu, connection status indicator
 - [x] Optional: floating overlay for desktop (`agents/windows/ui/overlay.py`)
 - [x] Brain admin CLI (runs via `docker exec`) -- view memories, force consolidation, revoke agents
+- [x] Full GUI desktop app (`agents/windows/app.py`) -- chat window, tray icon, WebSocket, action execution
 
 ## Phase 9: Additional Desktop Agents (Priority: LOW)
 - [x] Implement macOS agent (`agents/macos/`) -- osascript, pyobjc for OS control
