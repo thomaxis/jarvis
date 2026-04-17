@@ -122,6 +122,9 @@
 ## Phase 11: Polish and Extras (Priority: BACKLOG)
 - [x] Offline mode -- local cache of top memories, command queuing, queue flush on reconnect, disconnected indicator
 - [x] Plugin system -- define plugin interface, build Spotify plugin as reference
+- [x] Spotify plugin -- real Spotify Web API (OAuth PKCE, search, play, pause, skip, volume, now playing)
+- [x] Plugin auto-setup -- AI detects unconfigured plugins, asks user for credentials, saves config automatically
+- [x] Plugin config persistence -- JSON config per plugin in brain/data/plugins/
 - [ ] Screen understanding -- screenshot + OCR for context awareness
 - [x] Predictive suggestions -- time-based procedural triggers ("It's 9am Monday...")
 - [x] Memory export/import CLI (via brain admin)

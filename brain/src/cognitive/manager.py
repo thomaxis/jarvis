@@ -81,13 +81,41 @@ class BrainManager:
         self._chat_engine = chat_engine
 
     async def chat(self, device_id: str, text: str) -> dict[str, Any]:
-        """Full loop: retrieve context -> call LLM -> process response -> return."""
+        """Full loop: retrieve context -> call LLM -> process response -> execute plugin actions."""
         context = await self.process_input(device_id, text)
+
+        # Inject plugin state into context so the LLM knows what's available
+        context["plugins"] = self.plugins.get_all_statuses()
 
         if not self._chat_engine:
             return {"response": "No LLM configured.", "context": context, "actions": []}
 
         llm_result = await self._chat_engine.chat(context)
+
+        # Execute any plugin actions the LLM requested
+        actions = llm_result.get("actions", [])
+        plugin_results = []
+        remaining_actions = []
+
+        for action in actions:
+            action_type = action.get("type", "")
+            # Check if this is a plugin action
+            if action_type.startswith("spotify_") or action_type in self.plugins.get_all_actions():
+                target = action.get("target", "")
+                params = action.get("params", {})
+                ok, detail = await self.plugins.execute_action(action_type, target=target, **params)
+                plugin_results.append({"action": action_type, "success": ok, "detail": detail})
+            else:
+                remaining_actions.append(action)
+
+        # If plugin actions ran, append their results to the response
+        if plugin_results:
+            extra = "\n".join(f"[{r['action']}] {r['detail']}" for r in plugin_results)
+            llm_result["response"] = llm_result.get("response", "") + "\n" + extra
+            llm_result["plugin_results"] = plugin_results
+
+        # Only pass non-plugin actions to the agent
+        llm_result["actions"] = remaining_actions
 
         # Store the response and extracted data back into memory
         await self.process_response(

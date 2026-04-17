@@ -48,6 +48,26 @@ class JarvisPlugin(ABC):
         """Return list of (regex_pattern, action_type) for intent detection."""
         return []
 
+    def is_configured(self) -> bool:
+        """Whether this plugin has all required config."""
+        return True
+
+    def get_setup_instructions(self) -> str:
+        """Return human-readable setup instructions if not configured."""
+        return "This plugin needs to be configured."
+
+    async def setup(self, **kwargs: Any) -> tuple[bool, str]:
+        """Configure the plugin with provided values."""
+        return False, "Setup not implemented."
+
+    def get_status(self) -> dict:
+        """Return plugin status for LLM context."""
+        return {
+            "name": self.name,
+            "configured": self.is_configured(),
+            "actions": list(self.get_actions().keys()),
+        }
+
 
 class PluginManager:
     """Loads and manages plugins."""
@@ -87,6 +107,19 @@ class PluginManager:
         for plugin in self._plugins.values():
             actions.update(plugin.get_actions())
         return actions
+
+    def get_all_statuses(self) -> list[dict]:
+        """Get status of all plugins for LLM context."""
+        return [p.get_status() for p in self._plugins.values()]
+
+    async def execute_action(self, action_name: str, **kwargs: Any) -> tuple[bool, str]:
+        """Execute a plugin action by name."""
+        for plugin in self._plugins.values():
+            actions = plugin.get_actions()
+            if action_name in actions:
+                handler = actions[action_name]
+                return await handler(**kwargs)
+        return False, f"Unknown plugin action: {action_name}"
 
     async def shutdown_all(self) -> None:
         for plugin in self._plugins.values():

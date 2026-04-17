@@ -50,6 +50,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     chat_engine = ChatEngine(config)
     _brain_manager.set_chat_engine(chat_engine)
 
+    # Load plugins
+    try:
+        from plugins.spotify import SpotifyPlugin
+        await _brain_manager.load_plugin(SpotifyPlugin())
+    except Exception as e:
+        log.warning("spotify_plugin_load_failed", error=str(e))
+
     app.state.brain = _brain_manager
 
     from brain.src.scheduler import init_scheduler, stop_scheduler

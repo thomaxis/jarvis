@@ -37,6 +37,8 @@ SYSTEM_PROMPT_TEMPLATE = """You are Jarvis, a personal AI assistant. You are sha
 
 {routine_section}
 
+{plugins_section}
+
 ## Response format
 Respond with a JSON object:
 {{
@@ -52,6 +54,12 @@ Respond with a JSON object:
 }}
 
 Only include actions if the user is asking you to DO something. Only extract facts that are new and worth remembering.
+
+## Plugin actions
+When the user asks to play music, control Spotify, etc., use the plugin action types in the actions array.
+For Spotify: use "spotify_play" with target="song name", "spotify_pause", "spotify_next", "spotify_previous", "spotify_volume" with target="0-100", "spotify_current".
+If a plugin is NOT configured, tell the user what they need to do to set it up. Ask them for the info (like a Client ID) directly.
+If the user provides a Client ID or API key for a plugin, use "spotify_setup" with target="the_client_id" to configure it.
 """
 
 
@@ -112,6 +120,16 @@ def build_system_prompt(context: dict[str, Any]) -> str:
         steps_str = ", ".join(f"{s.get('action', '?')} {s.get('target', '')}" for s in routine.get("steps", []))
         routine_section = f"## Matched routine: {routine['name']}\nSteps: {steps_str}\nExecute this routine if appropriate."
 
+    plugins = context.get("plugins", [])
+    plugins_section = ""
+    if plugins:
+        lines = []
+        for p in plugins:
+            status = "ready" if p.get("configured") else "NOT CONFIGURED (ask user to set it up)"
+            actions_str = ", ".join(p.get("actions", []))
+            lines.append(f"- {p['name']}: {status} | Actions: {actions_str}")
+        plugins_section = "## Available plugins\n" + "\n".join(lines)
+
     return SYSTEM_PROMPT_TEMPLATE.format(
         tone=personality.get("tone", "direct"),
         verbosity=personality.get("verbosity", "concise"),
@@ -127,4 +145,5 @@ def build_system_prompt(context: dict[str, Any]) -> str:
         associations_section=associations_section,
         episodes_section=episodes_section,
         routine_section=routine_section,
+        plugins_section=plugins_section,
     )

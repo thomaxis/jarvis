@@ -102,6 +102,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Test suite expanded to 82 tests (10 new for plugins + predictions)
 
 - Jarvis GUI desktop app (`agents/windows/app.py`): full chat window with dark theme, system tray icon, WebSocket connection, auto-reconnect, action execution, message bubbles, connection status indicator
+- Spotify plugin rewritten with real Spotify Web API: OAuth PKCE auth, search tracks, play by name, pause, skip, previous, volume, now playing
+- Plugin config persistence (`plugins/config.py`): JSON config per plugin stored in brain/data/plugins/
+- Spotify OAuth catches callback on localhost:8888, exchanges code for tokens, auto-refreshes
+- Plugin auto-setup: LLM detects unconfigured plugins, asks user for Client ID, triggers setup flow
+- Plugin actions executed server-side by BrainManager before response is sent to agent
+- JarvisPlugin base class extended: is_configured(), get_setup_instructions(), setup(), get_status()
+- PluginManager: execute_action(), get_all_statuses() for LLM context injection
+- Prompt builder injects plugin status so LLM knows what's available and what needs setup
+- Spotify plugin auto-loads at brain startup
 
 ### Changed
 - ChatEngine rewritten to support 6 LLM providers via OpenAI-compatible API: Groq (free), OpenRouter (free models), Gemini (free), HuggingFace (free), OpenAI (paid), Anthropic (paid)
