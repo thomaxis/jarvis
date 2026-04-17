@@ -101,8 +101,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - README.md with architecture overview, quick start, and project structure
 - Test suite expanded to 82 tests (10 new for plugins + predictions)
 
-- Jarvis GUI desktop app (`agents/windows/app.py`): full chat window with dark theme, system tray icon, WebSocket connection, auto-reconnect, action execution, message bubbles, connection status indicator
+- Jarvis GUI desktop app (`agents/windows/app.py`): Python prototype with pywebview
 - Voice support in GUI app: push-to-talk mic button, Ctrl+Space shortcut, Google STT transcription, Windows TTS responses
+- Native C# WPF desktop app (`agents/windows-app/`): .NET 9, XAML UI, Windows Speech API, native WebSocket
+- WPF design: gradient logo, rounded message bubbles with fade-in animation, avatar icons, typing indicator
+- Windows native STT via System.Speech.Recognition (no internet needed for basic recognition)
+- Windows native TTS via System.Speech.Synthesis (SAPI voices)
+- Native WebSocket client via System.Net.WebSockets with auto-reconnect
+- Action execution via Process.Start (open apps, URLs, Google search)
 - VoiceEngine class: SpeechRecognition for STT (Google free API), pyttsx3 for TTS (Windows SAPI voices)
 - Voice status shown in title bar (mic icon + "Voice ready" / "No mic")
 - Jarvis speaks every response aloud via TTS when voice is enabled

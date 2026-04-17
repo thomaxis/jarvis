@@ -97,6 +97,7 @@
 - [x] Wire voice into Windows agent main loop
 - [x] End-to-end test: speak > transcribe > send to cloud brain > respond > speak
 - [x] Voice in GUI app: mic button, Ctrl+Space, Google STT, Windows TTS
+- [x] Native C# WPF desktop app (`agents/windows-app/`): .NET 9, XAML, Windows Speech API, native WebSocket
 
 ## Phase 7: Task Orchestration (Priority: MEDIUM)
 - [x] Implement `brain/src/orchestration/task_manager.py` -- task breakdown, dependency tracking
