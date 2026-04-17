@@ -69,6 +69,10 @@ class BrainManager:
             semantic=self.semantic,
         )
 
+        # Plugin system
+        from plugins.base import PluginManager
+        self.plugins = PluginManager()
+
     async def process_input(self, device_id: str, text: str) -> dict[str, Any]:
         """Process user input through the full 10-layer retrieval pipeline."""
         message = Message(role="user", content=text, device_id=device_id)
@@ -138,10 +142,19 @@ class BrainManager:
         await self.short_term.unregister_device(device_id)
         log.info("device_disconnected", device=device_id)
 
+    async def load_plugin(self, plugin) -> bool:
+        """Load a plugin into the brain."""
+        return await self.plugins.load(plugin, self)
+
     async def save_state(self) -> None:
         """Persist in-memory state to disk."""
         self.associations.save()
         self.personality.save()
+
+    async def shutdown(self) -> None:
+        """Full shutdown: save state + stop plugins."""
+        await self.save_state()
+        await self.plugins.shutdown_all()
 
     async def get_status(self) -> dict:
         """Return brain status for health checks."""
@@ -154,4 +167,5 @@ class BrainManager:
             "knowledge_entries": knowledge_count,
             "associations": self.associations.get_stats(),
             "semantic_entries": self.semantic.count(),
+            "plugins": self.plugins.list_plugins(),
         }

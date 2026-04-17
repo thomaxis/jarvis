@@ -105,8 +105,8 @@
 
 ## Phase 8: UI (Priority: LOW)
 - [x] Implement Windows system tray (`agents/windows/ui/tray.py`) -- icon, menu, connection status indicator
-- [ ] Optional: floating overlay for desktop (`agents/windows/ui/overlay.py`)
-- [ ] Brain admin CLI (runs via `docker exec`) -- view memories, force consolidation, revoke agents
+- [x] Optional: floating overlay for desktop (`agents/windows/ui/overlay.py`)
+- [x] Brain admin CLI (runs via `docker exec`) -- view memories, force consolidation, revoke agents
 
 ## Phase 9: Additional Desktop Agents (Priority: LOW)
 - [x] Implement macOS agent (`agents/macos/`) -- osascript, pyobjc for OS control
@@ -122,8 +122,8 @@
 - [x] Offline mode -- local cache of top memories, command queuing, queue flush on reconnect, disconnected indicator
 - [x] Plugin system -- define plugin interface, build Spotify plugin as reference
 - [ ] Screen understanding -- screenshot + OCR for context awareness
-- [ ] Predictive suggestions -- time-based procedural triggers ("It's 9am Monday...")
-- [ ] Memory export/import CLI (via brain admin)
+- [x] Predictive suggestions -- time-based procedural triggers ("It's 9am Monday...")
+- [x] Memory export/import CLI (via brain admin)
 - [ ] Per-device action permissions config
 - [ ] Cloud server monitoring (uptime checks, disk alerts, memory usage)
 - [ ] Log rotation on cloud server

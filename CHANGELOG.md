@@ -94,6 +94,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Offline cache (`agents/shared/offline.py`): knowledge caching, command queuing, queue flush on reconnect
 - Plugin system (`plugins/base.py`): JarvisPlugin interface + PluginManager for loading/unloading
 - Spotify plugin as reference implementation with play/pause/next/previous/search actions
+- Brain admin CLI (`brain/admin.py`): status, memories, consolidate, forget, export, revoke commands
+- Plugin system wired into BrainManager with load_plugin() and shutdown()
+- Predictive suggestions engine (`predictions.py`): time-based routine triggers, context-aware greetings
+- Desktop overlay (`ui/overlay.py`): transparent floating tkinter window for Jarvis responses
+- README.md with architecture overview, quick start, and project structure
+- Test suite expanded to 82 tests (10 new for plugins + predictions)
 
 ### Planning Phase - 2026-04-17
 
