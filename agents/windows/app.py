@@ -1,7 +1,7 @@
-"""Jarvis Windows GUI Application.
+"""Jarvis Windows App -- Native window with modern web-based UI.
 
-Modern desktop app with system tray, chat interface, and voice.
-Built with customtkinter for a polished look.
+Uses pywebview for a native Windows window with full HTML/CSS/JS control.
+Connects to the brain via WebSocket. Supports voice (STT + TTS).
 
 Usage: python agents/windows/app.py
 """
@@ -14,113 +14,65 @@ import logging
 import os
 import sys
 import threading
-import tkinter as tk
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-# Add project root to path
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-import customtkinter as ctk
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-    datefmt="%H:%M:%S",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger("jarvis.app")
 
-# --- Theme ---
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("blue")
 
-# Palette
-BG_BASE = "#0b0b14"
-BG_SIDEBAR = "#10101e"
-BG_CHAT = "#0e0e1a"
-BG_INPUT_BAR = "#131324"
-BG_INPUT_FIELD = "#1a1a30"
-BG_USER_BUBBLE = "#1e1e3a"
-BG_JARVIS_BUBBLE = "#16162e"
-BORDER_SUBTLE = "#1f1f3a"
-ACCENT = "#6366f1"
-ACCENT_LIGHT = "#818cf8"
-ACCENT_DIM = "#4f46e5"
-TEXT_WHITE = "#f1f5f9"
-TEXT_LIGHT = "#cbd5e1"
-TEXT_MID = "#94a3b8"
-TEXT_DIM = "#475569"
-GREEN_DOT = "#34d399"
-RED_DOT = "#f87171"
-MIC_PULSE = "#ef4444"
-MIC_IDLE_CLR = "#6366f1"
-
-
-# --- Voice Engine (unchanged logic, cleaned up) ---
+# ── Voice Engine ──
 
 class VoiceEngine:
     def __init__(self) -> None:
         self._recognizer = None
         self._tts_engine = None
-        self._stt_ready = False
-        self._tts_ready = False
+        self.stt_ready = False
+        self.tts_ready = False
         self._tts_lock = threading.Lock()
 
-    def initialize(self) -> dict[str, bool]:
-        status = {"stt": False, "tts": False}
+    def initialize(self) -> None:
         try:
             import speech_recognition as sr
             self._recognizer = sr.Recognizer()
             self._recognizer.dynamic_energy_threshold = True
             self._recognizer.pause_threshold = 1.0
-            with sr.Microphone() as _:
+            with sr.Microphone():
                 pass
-            self._stt_ready = True
-            status["stt"] = True
-            log.info("STT ready")
+            self.stt_ready = True
         except Exception as e:
             log.warning("STT disabled: %s", e)
-
         try:
             import pyttsx3
             self._tts_engine = pyttsx3.init()
             self._tts_engine.setProperty("rate", 175)
-            voices = self._tts_engine.getProperty("voices")
-            for v in voices:
+            for v in self._tts_engine.getProperty("voices"):
                 if "david" in v.name.lower() or "mark" in v.name.lower():
                     self._tts_engine.setProperty("voice", v.id)
                     break
-            self._tts_ready = True
-            status["tts"] = True
-            log.info("TTS ready")
+            self.tts_ready = True
         except Exception as e:
             log.warning("TTS disabled: %s", e)
-        return status
 
-    @property
-    def stt_ready(self) -> bool:
-        return self._stt_ready
-
-    @property
-    def tts_ready(self) -> bool:
-        return self._tts_ready
-
-    def listen(self, timeout: int = 8, phrase_limit: int = 15) -> str:
-        if not self._stt_ready:
+    def listen(self) -> str:
+        if not self.stt_ready:
             return ""
         import speech_recognition as sr
         try:
             with sr.Microphone() as src:
                 self._recognizer.adjust_for_ambient_noise(src, duration=0.3)
-                audio = self._recognizer.listen(src, timeout=timeout, phrase_time_limit=phrase_limit)
+                audio = self._recognizer.listen(src, timeout=8, phrase_time_limit=15)
             return self._recognizer.recognize_google(audio)
         except Exception:
             return ""
 
     def speak(self, text: str) -> None:
-        if not self._tts_ready:
+        if not self.tts_ready:
             return
         def _do():
             with self._tts_lock:
@@ -132,378 +84,560 @@ class VoiceEngine:
         threading.Thread(target=_do, daemon=True).start()
 
 
-# --- Main App ---
+# ── JS Bridge API ──
 
-class JarvisApp(ctk.CTk):
+class JarvisAPI:
+    """Python API exposed to the webview JS via pywebview."""
+
     def __init__(self) -> None:
-        super().__init__()
         self._ws = None
         self._connected = False
-        self._running = True
-        self._listening = False
         self._loop: asyncio.AbstractEventLoop | None = None
+        self._window = None
+        self._voice = VoiceEngine()
+        self._listening = False
 
-        # Config
         self._device_id = os.environ.get("JARVIS_DEVICE_ID", "windows-gui")
         self._brain_ws = os.environ.get("JARVIS_BRAIN_WS", "ws://localhost:8400/ws")
         self._token = os.environ.get("JARVIS_AGENT_TOKEN", "")
 
-        # Voice
-        self._voice = VoiceEngine()
-        self._voice_status = self._voice.initialize()
+    def start(self, window) -> None:
+        self._window = window
+        self._voice.initialize()
+        self._call_js("setVoiceStatus", self._voice.stt_ready, self._voice.tts_ready)
+        threading.Thread(target=self._run_async, daemon=True).start()
 
-        self._build_ui()
-
-        # Background threads
-        threading.Thread(target=self._run_async_loop, daemon=True).start()
-        threading.Thread(target=self._run_tray, daemon=True).start()
-
-    def _build_ui(self) -> None:
-        self.title("Jarvis")
-        self.geometry("480x720")
-        self.minsize(400, 550)
-        self.configure(fg_color=BG_BASE)
-        self.protocol("WM_DELETE_WINDOW", self._hide_window)
-
-        # ---- Header ----
-        header = ctk.CTkFrame(self, fg_color=BG_SIDEBAR, corner_radius=0, height=56)
-        header.pack(fill="x")
-        header.pack_propagate(False)
-
-        # Left: logo + status
-        left = ctk.CTkFrame(header, fg_color="transparent")
-        left.pack(side="left", padx=20, pady=12)
-
-        ctk.CTkLabel(
-            left, text="J", font=ctk.CTkFont("Segoe UI", 20, "bold"),
-            text_color=ACCENT, width=32, height=32,
-            fg_color=ACCENT_DIM, corner_radius=8,
-        ).pack(side="left")
-
-        ctk.CTkLabel(
-            left, text="  JARVIS", font=ctk.CTkFont("Segoe UI", 16, "bold"),
-            text_color=TEXT_WHITE,
-        ).pack(side="left")
-
-        self._status_label = ctk.CTkLabel(
-            left, text="  Connecting...", font=ctk.CTkFont("Segoe UI", 11),
-            text_color=TEXT_DIM,
-        )
-        self._status_label.pack(side="left", padx=(4, 0))
-
-        # Right: voice badge
-        right = ctk.CTkFrame(header, fg_color="transparent")
-        right.pack(side="right", padx=20, pady=12)
-
-        mic_text = "Voice ON" if self._voice_status["stt"] else "Voice OFF"
-        mic_color = GREEN_DOT if self._voice_status["stt"] else RED_DOT
-        self._voice_badge = ctk.CTkLabel(
-            right, text=f"  {mic_text}",
-            font=ctk.CTkFont("Segoe UI", 10),
-            text_color=mic_color,
-        )
-        self._voice_badge.pack(side="right")
-
-        # Divider
-        ctk.CTkFrame(self, fg_color=BORDER_SUBTLE, height=1, corner_radius=0).pack(fill="x")
-
-        # ---- Chat Area ----
-        self._chat_scroll = ctk.CTkScrollableFrame(
-            self, fg_color=BG_CHAT, corner_radius=0,
-            scrollbar_button_color=BG_SIDEBAR,
-            scrollbar_button_hover_color=ACCENT_DIM,
-        )
-        self._chat_scroll.pack(fill="both", expand=True, padx=0, pady=0)
-
-        # Welcome
-        self._add_system_msg("Welcome to Jarvis OS")
-        self._add_system_msg("Connecting to brain...")
-
-        # Divider
-        ctk.CTkFrame(self, fg_color=BORDER_SUBTLE, height=1, corner_radius=0).pack(fill="x")
-
-        # ---- Input Bar ----
-        input_bar = ctk.CTkFrame(self, fg_color=BG_INPUT_BAR, corner_radius=0, height=70)
-        input_bar.pack(fill="x")
-        input_bar.pack_propagate(False)
-
-        input_row = ctk.CTkFrame(input_bar, fg_color="transparent")
-        input_row.pack(fill="x", padx=16, pady=14)
-
-        # Mic button
-        self._mic_btn = ctk.CTkButton(
-            input_row, text="\U0001F3A4", width=42, height=42,
-            font=ctk.CTkFont(size=18),
-            fg_color=BG_INPUT_FIELD, hover_color=ACCENT_DIM,
-            corner_radius=21, border_width=0,
-            command=self._on_mic_click,
-        )
-        if self._voice_status["stt"]:
-            self._mic_btn.pack(side="left", padx=(0, 10))
-
-        # Text entry
-        self._input_entry = ctk.CTkEntry(
-            input_row, placeholder_text="Message Jarvis...",
-            font=ctk.CTkFont("Segoe UI", 13),
-            fg_color=BG_INPUT_FIELD, border_color=BORDER_SUBTLE,
-            text_color=TEXT_WHITE, placeholder_text_color=TEXT_DIM,
-            corner_radius=22, height=42, border_width=1,
-        )
-        self._input_entry.pack(side="left", fill="x", expand=True)
-        self._input_entry.bind("<Return>", self._on_send)
-
-        # Send button
-        self._send_btn = ctk.CTkButton(
-            input_row, text="\u27A4", width=42, height=42,
-            font=ctk.CTkFont(size=16),
-            fg_color=ACCENT, hover_color=ACCENT_LIGHT,
-            corner_radius=21, border_width=0,
-            command=self._on_send,
-        )
-        self._send_btn.pack(side="right", padx=(10, 0))
-
-        # Keyboard shortcut
-        self.bind("<Control-space>", lambda e: self._on_mic_click())
-
-        self._input_entry.focus_set()
-
-    # ---- Chat messages ----
-
-    def _add_message(self, role: str, text: str) -> None:
-        is_user = role == "user"
-        bubble_bg = BG_USER_BUBBLE if is_user else BG_JARVIS_BUBBLE
-        name = "You" if is_user else "Jarvis"
-        name_color = TEXT_MID if is_user else ACCENT_LIGHT
-        time_str = datetime.now().strftime("%H:%M")
-
-        # Container
-        container = ctk.CTkFrame(self._chat_scroll, fg_color="transparent")
-        container.pack(fill="x", padx=16, pady=(6, 2))
-
-        # Bubble
-        bubble = ctk.CTkFrame(container, fg_color=bubble_bg, corner_radius=16, border_width=1, border_color=BORDER_SUBTLE)
-        bubble.pack(fill="x")
-
-        inner = ctk.CTkFrame(bubble, fg_color="transparent")
-        inner.pack(fill="x", padx=16, pady=12)
-
-        # Header row
-        hdr = ctk.CTkFrame(inner, fg_color="transparent")
-        hdr.pack(fill="x")
-
-        ctk.CTkLabel(
-            hdr, text=name, font=ctk.CTkFont("Segoe UI", 11, "bold"),
-            text_color=name_color,
-        ).pack(side="left")
-
-        ctk.CTkLabel(
-            hdr, text=time_str, font=ctk.CTkFont("Segoe UI", 10),
-            text_color=TEXT_DIM,
-        ).pack(side="right")
-
-        # Body
-        ctk.CTkLabel(
-            inner, text=text, font=ctk.CTkFont("Segoe UI", 12),
-            text_color=TEXT_LIGHT, wraplength=380,
-            justify="left", anchor="nw",
-        ).pack(fill="x", pady=(6, 0))
-
-        self._scroll_to_bottom()
-
-    def _add_system_msg(self, text: str) -> None:
-        container = ctk.CTkFrame(self._chat_scroll, fg_color="transparent")
-        container.pack(fill="x", padx=16, pady=(8, 2))
-
-        ctk.CTkLabel(
-            container, text=text,
-            font=ctk.CTkFont("Segoe UI", 10),
-            text_color=TEXT_DIM,
-        ).pack(anchor="center")
-
-        self._scroll_to_bottom()
-
-    def _scroll_to_bottom(self) -> None:
-        self.update_idletasks()
-        try:
-            self._chat_scroll._parent_canvas.yview_moveto(1.0)
-        except Exception:
-            pass
-
-    def _update_status(self, connected: bool) -> None:
-        self._connected = connected
-        if connected:
-            self._status_label.configure(text="  Connected", text_color=GREEN_DOT)
-        else:
-            self._status_label.configure(text="  Disconnected", text_color=RED_DOT)
-
-    # ---- Input ----
-
-    def _on_send(self, event: Any = None) -> None:
-        text = self._input_entry.get().strip()
-        if not text:
+    def send_message(self, text: str) -> None:
+        if not text.strip():
             return
-        self._input_entry.delete(0, "end")
-        self._send_text(text)
-
-    def _send_text(self, text: str) -> None:
-        self._add_message("user", text)
         if self._loop and self._connected:
             asyncio.run_coroutine_threadsafe(self._ws_send(text), self._loop)
-        elif not self._connected:
-            self._add_system_msg("Not connected to brain.")
 
-    # ---- Voice ----
-
-    def _on_mic_click(self) -> None:
+    def start_listening(self) -> None:
         if self._listening or not self._voice.stt_ready:
             return
         self._listening = True
-        self._mic_btn.configure(fg_color=MIC_PULSE, text="\U0001F534")
-        self._add_system_msg("Listening... speak now")
+        self._call_js("setListening", True)
         threading.Thread(target=self._do_listen, daemon=True).start()
 
+    def get_status(self) -> dict:
+        return {"connected": self._connected, "stt": self._voice.stt_ready, "tts": self._voice.tts_ready}
+
+    # ── Internal ──
+
     def _do_listen(self) -> None:
-        text = self._voice.listen(timeout=8, phrase_limit=15)
+        text = self._voice.listen()
         self._listening = False
-        self.after(0, self._mic_btn.configure, {"fg_color": BG_INPUT_FIELD, "text": "\U0001F3A4"})
+        self._call_js("setListening", False)
         if text:
-            self.after(0, self._send_text, text)
+            self._call_js("onVoiceResult", text)
         else:
-            self.after(0, self._add_system_msg, "Didn't catch that. Try again.")
+            self._call_js("onVoiceFail")
 
-    # ---- WebSocket ----
+    def _call_js(self, fn: str, *args: Any) -> None:
+        if self._window:
+            try:
+                args_str = ", ".join(json.dumps(a) for a in args)
+                self._window.evaluate_js(f"window.jarvisUI.{fn}({args_str})")
+            except Exception:
+                pass
 
-    def _run_async_loop(self) -> None:
+    def _run_async(self) -> None:
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
         self._loop.run_until_complete(self._connect_loop())
 
     async def _connect_loop(self) -> None:
         import websockets
-        reconnect_delay = 1.0
-        while self._running:
+        delay = 1.0
+        while True:
             try:
-                headers = {}
-                if self._token:
-                    headers["Authorization"] = f"Bearer {self._token}"
-
-                async with websockets.connect(self._brain_ws, additional_headers=headers) as ws:
+                hdrs = {"Authorization": f"Bearer {self._token}"} if self._token else {}
+                async with websockets.connect(self._brain_ws, additional_headers=hdrs) as ws:
                     self._ws = ws
                     await ws.send(json.dumps({
-                        "event": "agent_connect",
-                        "device_id": self._device_id,
+                        "event": "agent_connect", "device_id": self._device_id,
                         "platform": "windows",
                         "capabilities": ["os_control", "apps", "files", "browser", "terminal", "clipboard", "system", "voice"],
                     }))
                     raw = await ws.recv()
-                    data = json.loads(raw)
-                    if data.get("event") == "connected":
-                        self.after(0, self._update_status, True)
-                        self.after(0, self._add_system_msg, "Brain connected. Ready.")
-                        reconnect_delay = 1.0
-
+                    if json.loads(raw).get("event") == "connected":
+                        self._connected = True
+                        self._call_js("setConnected", True)
+                        delay = 1.0
                     async for raw in ws:
                         msg = json.loads(raw)
-                        await self._handle_ws_msg(msg)
-
+                        await self._handle(msg)
             except Exception as e:
                 self._ws = None
-                self.after(0, self._update_status, False)
-                log.warning("Connection lost: %s. Retry in %.0fs", e, reconnect_delay)
-                await asyncio.sleep(reconnect_delay)
-                reconnect_delay = min(reconnect_delay * 2, 30.0)
+                self._connected = False
+                self._call_js("setConnected", False)
+                log.warning("WS lost: %s, retry %.0fs", e, delay)
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, 30.0)
 
     async def _ws_send(self, text: str) -> None:
         if self._ws:
-            try:
-                await self._ws.send(json.dumps({
-                    "event": "user_input", "device_id": self._device_id, "text": text,
-                }))
-            except Exception as e:
-                self.after(0, self._add_system_msg, f"Send failed: {e}")
+            await self._ws.send(json.dumps({"event": "user_input", "device_id": self._device_id, "text": text}))
 
-    async def _handle_ws_msg(self, msg: dict) -> None:
-        event = msg.get("event", "")
-        if event == "response":
+    async def _handle(self, msg: dict) -> None:
+        ev = msg.get("event", "")
+        if ev == "response":
             text = msg.get("text", "")
             if text:
-                self.after(0, self._add_message, "jarvis", text)
-                if msg.get("tts", False) and self._voice.tts_ready:
+                self._call_js("addMessage", "jarvis", text)
+                if msg.get("tts") and self._voice.tts_ready:
                     self._voice.speak(text)
             for act in msg.get("actions", []):
-                await self._exec_action(act)
-        elif event == "notification":
-            self.after(0, self._add_system_msg, msg.get("message", ""))
-        elif event == "pending_task":
-            self.after(0, self._add_system_msg, f"Pending: {msg.get('task', {}).get('description', '')}")
+                await self._exec(act)
+        elif ev == "notification":
+            self._call_js("addSystem", msg.get("message", ""))
 
-    async def _exec_action(self, action: dict) -> None:
+    async def _exec(self, action: dict) -> None:
         from agents.windows.actions import apps, browser, clipboard, files, system, terminal
-        t = action.get("type", "")
-        target = action.get("target", "")
-        params = action.get("params", {})
-        ok, detail = False, "Unknown"
+        t, target, p = action.get("type", ""), action.get("target", ""), action.get("params", {})
+        ok, d = False, ""
+        if t == "open_app": ok, d = apps.open_app(target)
+        elif t == "close_app": ok, d = apps.close_app(target)
+        elif t == "open_url": ok, d = browser.open_url(target)
+        elif t == "search": ok, d = browser.search_web(target)
+        elif t == "volume": ok, d = system.set_volume(target)
+        elif t == "terminal": ok, d = terminal.run_command(target)
+        self._call_js("addSystem", f"{'Done' if ok else 'Failed'}: {t} {target}")
 
-        if t == "open_app": ok, detail = apps.open_app(target)
-        elif t == "close_app": ok, detail = apps.close_app(target)
-        elif t == "open_url": ok, detail = browser.open_url(target)
-        elif t == "search": ok, detail = browser.search_web(target)
-        elif t == "volume": ok, detail = system.set_volume(target)
-        elif t == "system_power" and target == "lock": ok, detail = system.lock_screen()
-        elif t == "terminal": ok, detail = terminal.run_command(target)
-        elif t == "clipboard" and params.get("operation") == "write": ok, detail = clipboard.write_clipboard(target)
 
-        self.after(0, self._add_system_msg, f"{'Done' if ok else 'Failed'}: {t} {target}")
+# ── HTML/CSS/JS ──
 
-    # ---- Tray ----
+HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-    def _run_tray(self) -> None:
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #08080f;
+  --bg-secondary: #0d0d18;
+  --bg-tertiary: #111122;
+  --bg-hover: #16162a;
+  --surface: #13132a;
+  --surface-light: #1a1a36;
+  --border: #1e1e3d;
+  --border-light: #2a2a50;
+  --accent: #6366f1;
+  --accent-glow: #818cf880;
+  --accent-dim: #4f46e5;
+  --green: #34d399;
+  --red: #f87171;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-dim: #475569;
+  --user-bubble: #1a1a40;
+  --jarvis-bubble: #0f1a2e;
+  --jarvis-border: #1a2a4a;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px; color: white;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.brand { font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+.status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-dim); font-weight: 400;
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--red);
+  transition: background 0.3s;
+}
+.status-dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+.header-right { display: flex; align-items: center; gap: 12px; }
+.badge {
+  font-size: 11px; padding: 4px 10px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-dim); font-weight: 500;
+}
+.badge.active { color: var(--green); border-color: #1a3a2a; background: #0a1a14; }
+
+/* ── Chat ── */
+.chat {
+  flex: 1; overflow-y: auto; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 6px;
+  scroll-behavior: smooth;
+}
+.chat::-webkit-scrollbar { width: 6px; }
+.chat::-webkit-scrollbar-track { background: transparent; }
+.chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.chat::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+.message {
+  display: flex; gap: 12px;
+  max-width: 88%;
+  animation: fadeIn 0.25s ease-out;
+}
+.message.user { align-self: flex-end; flex-direction: row-reverse; }
+.message.jarvis { align-self: flex-start; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.avatar {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600;
+  flex-shrink: 0; margin-top: 2px;
+}
+.message.jarvis .avatar {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  color: white;
+}
+.message.user .avatar {
+  background: var(--surface-light);
+  color: var(--text-secondary);
+}
+
+.bubble {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 13.5px; line-height: 1.55;
+  word-wrap: break-word;
+}
+.message.user .bubble {
+  background: var(--user-bubble);
+  border: 1px solid var(--border);
+  border-bottom-right-radius: 4px;
+}
+.message.jarvis .bubble {
+  background: var(--jarvis-bubble);
+  border: 1px solid var(--jarvis-border);
+  border-bottom-left-radius: 4px;
+}
+
+.bubble .name {
+  font-size: 11px; font-weight: 600;
+  margin-bottom: 4px;
+  display: flex; justify-content: space-between;
+}
+.message.jarvis .name span:first-child { color: var(--accent); }
+.message.user .name span:first-child { color: var(--text-secondary); }
+.name .time { color: var(--text-dim); font-weight: 400; }
+
+.system-msg {
+  text-align: center; font-size: 11px; color: var(--text-dim);
+  padding: 8px 0;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.typing {
+  display: none; align-self: flex-start; padding: 6px 0;
+  animation: fadeIn 0.2s ease-out;
+}
+.typing.show { display: flex; }
+.typing-dots { display: flex; gap: 4px; padding: 10px 16px; background: var(--jarvis-bubble); border-radius: 16px; border: 1px solid var(--jarvis-border); }
+.typing-dots span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim);
+  animation: bounce 1.2s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+/* ── Input ── */
+.input-area {
+  padding: 16px 24px 20px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.input-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 6px 6px 6px 8px;
+  transition: border-color 0.2s;
+}
+.input-row:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+
+.mic-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--accent); font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.mic-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
+.mic-btn.recording {
+  background: var(--red); border-color: var(--red); color: white;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(248,113,113,0); }
+}
+
+.input-field {
+  flex: 1; border: none; outline: none;
+  background: transparent; color: var(--text);
+  font-size: 14px; font-family: inherit;
+  padding: 8px 4px;
+}
+.input-field::placeholder { color: var(--text-dim); }
+
+.send-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--accent); border: none;
+  color: white; font-size: 15px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.send-btn:hover { background: var(--accent-dim); transform: scale(1.05); }
+.send-btn:active { transform: scale(0.95); }
+
+/* ── Helpers ── */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">J</div>
+    <span class="brand">Jarvis</span>
+    <div class="status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Connecting...</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="badge" id="voiceBadge">Voice OFF</div>
+  </div>
+</div>
+
+<!-- Chat -->
+<div class="chat" id="chat">
+  <div class="system-msg">Welcome to Jarvis OS</div>
+  <div class="system-msg">Connecting to brain...</div>
+</div>
+
+<!-- Typing indicator -->
+<div class="typing" id="typing">
+  <div style="width:32px"></div>
+  <div class="typing-dots"><span></span><span></span><span></span></div>
+</div>
+
+<!-- Input -->
+<div class="input-area">
+  <div class="input-row">
+    <button class="mic-btn" id="micBtn" onclick="window.jarvisUI.micClick()" title="Push to talk (Ctrl+Space)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+    </button>
+    <input class="input-field" id="inputField" type="text" placeholder="Message Jarvis..." autocomplete="off" />
+    <button class="send-btn" id="sendBtn" onclick="window.jarvisUI.sendClick()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('inputField');
+const micBtn = document.getElementById('micBtn');
+const typing = document.getElementById('typing');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const voiceBadge = document.getElementById('voiceBadge');
+
+window.jarvisUI = {
+  // Called from Python
+  setConnected(on) {
+    statusDot.classList.toggle('on', on);
+    statusText.textContent = on ? 'Connected' : 'Disconnected';
+    if (on) this.addSystem('Brain connected. Ready.');
+  },
+  setVoiceStatus(stt, tts) {
+    if (stt) {
+      voiceBadge.textContent = 'Voice ON';
+      voiceBadge.classList.add('active');
+      micBtn.classList.remove('hidden');
+    } else {
+      voiceBadge.textContent = 'Voice OFF';
+      micBtn.classList.add('hidden');
+    }
+  },
+  setListening(on) {
+    micBtn.classList.toggle('recording', on);
+    if (on) this.addSystem('Listening... speak now');
+  },
+  onVoiceResult(text) {
+    this.addMessage('user', text);
+    this._send(text);
+  },
+  onVoiceFail() {
+    this.addSystem("Didn't catch that. Try again.");
+  },
+
+  addMessage(role, text) {
+    typing.classList.remove('show');
+    const isUser = role === 'user';
+    const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const div = document.createElement('div');
+    div.className = 'message ' + (isUser ? 'user' : 'jarvis');
+    div.innerHTML = `
+      <div class="avatar">${isUser ? 'U' : 'J'}</div>
+      <div class="bubble">
+        <div class="name"><span>${isUser ? 'You' : 'Jarvis'}</span><span class="time">${now}</span></div>
+        <div>${this._escapeHtml(text)}</div>
+      </div>
+    `;
+    chat.appendChild(div);
+    this._scroll();
+  },
+
+  addSystem(text) {
+    const div = document.createElement('div');
+    div.className = 'system-msg';
+    div.textContent = text;
+    chat.appendChild(div);
+    this._scroll();
+  },
+
+  // UI handlers
+  sendClick() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    this.addMessage('user', text);
+    this._send(text);
+  },
+  micClick() {
+    pywebview.api.start_listening();
+  },
+
+  _send(text) {
+    typing.classList.add('show');
+    this._scroll();
+    pywebview.api.send_message(text);
+  },
+  _scroll() {
+    setTimeout(() => chat.scrollTop = chat.scrollHeight, 50);
+  },
+  _escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML.replace(/\\n/g, '<br>');
+  }
+};
+
+// Keyboard
+input.addEventListener('keydown', e => { if (e.key === 'Enter') window.jarvisUI.sendClick(); });
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.code === 'Space') { e.preventDefault(); window.jarvisUI.micClick(); }
+});
+input.focus();
+</script>
+</body>
+</html>"""
+
+
+# ── Main ──
+
+def main() -> None:
+    import webview
+
+    api = JarvisAPI()
+
+    window = webview.create_window(
+        "Jarvis",
+        html=HTML,
+        js_api=api,
+        width=500,
+        height=750,
+        min_size=(420, 550),
+        background_color="#08080f",
+        frameless=False,
+        easy_drag=False,
+        text_select=True,
+    )
+
+    def on_loaded():
+        api.start(window)
+
+    window.events.loaded += on_loaded
+
+    # System tray in background
+    def run_tray():
         try:
             import pystray
             from PIL import Image, ImageDraw, ImageFont
+            sz = 64
+            img = Image.new("RGBA", (sz, sz), (0, 0, 0, 0))
+            d = ImageDraw.Draw(img)
+            d.rounded_rectangle([2, 2, sz-2, sz-2], radius=14, fill=(99, 102, 241, 255))
+            try:
+                fnt = ImageFont.truetype("segoeuib.ttf", 32)
+                d.text((sz//2, sz//2), "J", fill="white", font=fnt, anchor="mm")
+            except Exception:
+                d.text((20, 14), "J", fill="white")
 
-            def make_icon():
-                sz = 64
-                img = Image.new("RGBA", (sz, sz), (0, 0, 0, 0))
-                d = ImageDraw.Draw(img)
-                d.rounded_rectangle([2, 2, sz-2, sz-2], radius=14, fill=(99, 102, 241, 255))
-                try:
-                    fnt = ImageFont.truetype("segoeuib.ttf", 32)
-                    d.text((sz//2, sz//2), "J", fill=(255, 255, 255, 255), font=fnt, anchor="mm")
-                except Exception:
-                    d.text((20, 14), "J", fill=(255, 255, 255, 255))
-                return img
-
-            def show(icon, item):
-                self.after(0, self._show_window)
-
+            def show_win(icon, item):
+                window.show()
             def quit_app(icon, item):
-                self._running = False
                 icon.stop()
-                self.after(0, self.destroy)
+                window.destroy()
 
             menu = pystray.Menu(
-                pystray.MenuItem("Show Jarvis", show, default=True),
+                pystray.MenuItem("Show Jarvis", show_win, default=True),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem("Quit", quit_app),
             )
-            pystray.Icon("jarvis", make_icon(), "Jarvis OS", menu).run()
+            pystray.Icon("jarvis", img, "Jarvis OS", menu).run()
         except ImportError:
-            log.warning("pystray/Pillow not installed")
+            pass
 
-    def _show_window(self) -> None:
-        self.deiconify()
-        self.lift()
-        self.focus_force()
-        self._input_entry.focus_set()
+    threading.Thread(target=run_tray, daemon=True).start()
 
-    def _hide_window(self) -> None:
-        self.withdraw()
-
-
-def main() -> None:
-    app = JarvisApp()
-    app.mainloop()
+    webview.start(debug=False)
 
 
 if __name__ == "__main__":
