@@ -39,20 +39,20 @@
 - [ ] Deploy to cloud: verify brain responds to health check over HTTPS
 
 ## Phase 2: Brain Intelligence (Priority: CRITICAL)
-- [ ] Implement Layer 4: Associative Memory (`associations.py`) -- NetworkX graph, co-occurrence edges, traversal
-- [ ] Implement Layer 5: Episodic Memory (`episodic.py`) -- PostgreSQL episodes table, event logging
-- [ ] Implement Layer 6: Procedural Memory (`procedural.py`) -- pattern detection, routine lifecycle (suggested > confirmed > active)
-- [ ] Implement Layer 7: Personality Memory (`personality.py`) -- JSON profile on disk, tone adaptation, corrections tracking
-- [ ] Implement Layer 8: Semantic Memory (`semantic.py`) -- ChromaDB embeddings, similarity search, deduplication
-- [ ] Implement Layer 9: Consolidation (`consolidation.py`) -- session summarization, fact extraction, decay, dedup, contradiction resolution
-- [ ] Implement Layer 10: Retrieval Pipeline (`retrieval.py`) -- query all layers, rank, select top N, build context
+- [x] Implement Layer 4: Associative Memory (`associations.py`) -- NetworkX graph, co-occurrence edges, traversal
+- [x] Implement Layer 5: Episodic Memory (`episodic.py`) -- PostgreSQL episodes table, event logging
+- [x] Implement Layer 6: Procedural Memory (`procedural.py`) -- pattern detection, routine lifecycle (suggested > confirmed > active)
+- [x] Implement Layer 7: Personality Memory (`personality.py`) -- JSON profile on disk, tone adaptation, corrections tracking
+- [x] Implement Layer 8: Semantic Memory (`semantic.py`) -- ChromaDB embeddings, similarity search, deduplication
+- [x] Implement Layer 9: Consolidation (`consolidation.py`) -- session summarization, fact extraction, decay, dedup, contradiction resolution
+- [x] Implement Layer 10: Retrieval Pipeline (`retrieval.py`) -- query all layers, rank, select top N, build context
 - [ ] Implement `extractor.py` -- LLM-powered fact extraction from conversations
 - [ ] Implement `decay.py` -- importance scoring formula, decay processing, archival to `archive` table
 - [ ] Set up APScheduler for consolidation cron (every 6 hours + session end)
-- [ ] Wire all 10 layers into `manager.py`
+- [x] Wire all 10 layers into `manager.py`
 - [ ] Build text-based CLI for testing brain remotely (connects to cloud brain)
-- [ ] Write Alembic migration for episodes + procedures tables
-- [ ] Write tests for layers 4-10
+- [x] Write Alembic migration for episodes + procedures tables
+- [x] Write tests for layers 4-10
 - [ ] Deploy and verify on cloud server
 
 ## Phase 3: Conversation Engine (Priority: HIGH)

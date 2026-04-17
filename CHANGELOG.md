@@ -32,6 +32,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Alembic migrations setup with initial schema (knowledge, episodes, procedures, archive tables)
 - Rate limiting middleware (`rate_limit.py`) -- per-IP, 120 req/min, Redis-backed, skips /health
 - Request logging middleware (`logging.py`) -- structured logs with method, path, status, duration
+- Layer 4: Associative Memory (`associations.py`) -- NetworkX graph, spreading activation, co-occurrence edges, decay
+- Layer 5: Episodic Memory (`episodic.py`) -- autobiographical event recording with time-of-day tagging
+- Layer 6: Procedural Memory (`procedural.py`) -- routine lifecycle (suggested > confirmed > active), trigger matching
+- Layer 7: Personality Memory (`personality.py`) -- JSON profile, per-device style, corrections tracking
+- Layer 8: Semantic Memory (`semantic.py`) -- ChromaDB vector search with graceful fallback if not installed
+- Layer 9: Consolidation Engine (`consolidation.py`) -- decay, dedup, rescoring, association cleanup
+- Layer 10: Retrieval Pipeline (`retrieval.py`) -- full 10-layer context assembly with spreading activation
+- Brain Manager upgraded to orchestrate all 10 layers with save_state() and consolidate()
+- Added networkx==3.4.2 to requirements
+- Test suite expanded to 41 tests (19 new for layers 4-10)
 
 ### Planning Phase - 2026-04-17
 
