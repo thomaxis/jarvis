@@ -73,6 +73,33 @@ class BrainManager:
         from plugins.base import PluginManager
         self.plugins = PluginManager()
 
+        # Chat engine (initialized lazily when config is available)
+        self._chat_engine = None
+
+    def set_chat_engine(self, chat_engine) -> None:
+        """Set the chat engine for LLM calls."""
+        self._chat_engine = chat_engine
+
+    async def chat(self, device_id: str, text: str) -> dict[str, Any]:
+        """Full loop: retrieve context -> call LLM -> process response -> return."""
+        context = await self.process_input(device_id, text)
+
+        if not self._chat_engine:
+            return {"response": "No LLM configured.", "context": context, "actions": []}
+
+        llm_result = await self._chat_engine.chat(context)
+
+        # Store the response and extracted data back into memory
+        await self.process_response(
+            device_id=device_id,
+            response_text=llm_result.get("response", ""),
+            facts=llm_result.get("facts_extracted"),
+            associations=llm_result.get("associations"),
+            topic=llm_result.get("topic"),
+        )
+
+        return llm_result
+
     async def process_input(self, device_id: str, text: str) -> dict[str, Any]:
         """Process user input through the full 10-layer retrieval pipeline."""
         message = Message(role="user", content=text, device_id=device_id)

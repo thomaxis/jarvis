@@ -11,6 +11,7 @@ router = APIRouter(prefix="/api/v1", tags=["input"])
 class InputRequest(BaseModel):
     device_id: str
     text: str
+    chat: bool = True  # If True, call LLM and return response. If False, return raw context.
 
 
 class ResponseAck(BaseModel):
@@ -26,8 +27,12 @@ async def process_input(req: InputRequest, request: Request) -> dict:
     if not brain:
         raise HTTPException(status_code=503, detail="Brain not ready")
 
-    context = await brain.process_input(req.device_id, req.text)
-    return {"status": "ok", "context": context}
+    if req.chat:
+        llm_result = await brain.chat(req.device_id, req.text)
+        return {"status": "ok", "response": llm_result.get("response", ""), "data": llm_result}
+    else:
+        context = await brain.process_input(req.device_id, req.text)
+        return {"status": "ok", "context": context}
 
 
 @router.post("/response")

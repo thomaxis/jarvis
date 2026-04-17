@@ -101,6 +101,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - README.md with architecture overview, quick start, and project structure
 - Test suite expanded to 82 tests (10 new for plugins + predictions)
 
+### Changed
+- ChatEngine rewritten to support 6 LLM providers via OpenAI-compatible API: Groq (free), OpenRouter (free models), Gemini (free), HuggingFace (free), OpenAI (paid), Anthropic (paid)
+- Default provider changed from Anthropic to Groq (free tier, fast inference)
+- Default fallback changed from OpenAI to OpenRouter (free Llama 3.3 70B)
+- All providers except Anthropic use a unified `_call_openai_compatible()` method via httpx
+- Automatic fallback: if primary provider fails, tries fallback provider before returning error
+- WebSocket `user_input` event now calls LLM and returns `response` event with text (was returning raw context)
+- REST `/api/v1/input` now returns LLM response by default (`chat=true`), pass `chat=false` for raw context
+- BrainManager.chat() method: full loop of context retrieval -> LLM call -> memory update -> return
+- Agent prints "Jarvis: <response>" to stdout and executes any actions from LLM response
+- LLM config expanded: `base_url`, `fallback_api_key_env` fields added
+- .env.example updated with all 6 provider API key variables
+- Test suite expanded to 83 tests
+
 ### Planning Phase - 2026-04-17
 
 #### Added

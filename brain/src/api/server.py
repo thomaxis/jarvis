@@ -45,6 +45,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     from brain.src.cognitive.manager import BrainManager
     _brain_manager = BrainManager()
+
+    from brain.src.conversation.chat import ChatEngine
+    chat_engine = ChatEngine(config)
+    _brain_manager.set_chat_engine(chat_engine)
+
     app.state.brain = _brain_manager
 
     from brain.src.scheduler import init_scheduler, stop_scheduler

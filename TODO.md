@@ -56,7 +56,7 @@
 - [ ] Deploy and verify on cloud server
 
 ## Phase 3: Conversation Engine (Priority: HIGH)
-- [x] Implement `brain/src/conversation/chat.py` -- Claude API integration, structured output parsing
+- [x] Implement `brain/src/conversation/chat.py` -- multi-provider LLM integration (Groq, OpenRouter, Gemini, HuggingFace, OpenAI, Anthropic)
 - [x] Implement `brain/src/conversation/prompt_builder.py` -- assemble system prompt with brain context
 - [x] Implement `brain/src/conversation/intent.py` -- intent detection, entity extraction
 - [x] Implement `brain/src/conversation/persona.py` -- Jarvis personality rules, tone logic

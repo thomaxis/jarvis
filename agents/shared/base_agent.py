@@ -81,7 +81,24 @@ class BaseAgent(ABC):
         elif event == "response":
             text = message.get("text", "")
             if text:
-                log.info("Jarvis: %s", text)
+                print(f"Jarvis: {text}")
+
+            # Execute any actions included in the response
+            actions = message.get("actions", [])
+            for act in actions:
+                action = ActionRequest(
+                    action_id=act.get("action_id", f"resp-{id(act)}"),
+                    type=act.get("type", ""),
+                    target=act.get("target", ""),
+                    device=act.get("device", self.device_id),
+                    params=act.get("params", {}),
+                )
+                result = await self.execute_action(action)
+                await self.connection.send_action_result(
+                    action_id=result.action_id,
+                    status=result.status,
+                    details=result.details,
+                )
 
         elif event == "notification":
             log.info("Notification: %s", message.get("message", ""))

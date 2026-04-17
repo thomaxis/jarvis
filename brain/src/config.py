@@ -27,11 +27,13 @@ class ServerConfig(BaseModel):
 
 
 class LLMConfig(BaseModel):
-    provider: str = "anthropic"
-    model: str = "claude-sonnet-4-20250514"
-    api_key_env: str = "ANTHROPIC_API_KEY"
-    fallback_provider: str = "openai"
-    fallback_model: str = "gpt-4o"
+    provider: str = "groq"
+    model: str = "llama-3.3-70b-versatile"
+    api_key_env: str = "GROQ_API_KEY"
+    base_url: str = ""
+    fallback_provider: str = "openrouter"
+    fallback_model: str = "meta-llama/llama-3.3-70b-instruct:free"
+    fallback_api_key_env: str = "OPENROUTER_API_KEY"
     temperature: float = 0.7
     max_tokens: int = 1024
 

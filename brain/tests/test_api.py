@@ -17,10 +17,24 @@ async def test_health_endpoint(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_input_endpoint(client: AsyncClient) -> None:
+async def test_input_endpoint_chat(client: AsyncClient) -> None:
+    """Test input with chat=True (default) -- returns LLM response."""
     resp = await client.post(
         "/api/v1/input",
         json={"device_id": "test-device", "text": "Hello Jarvis"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert "response" in data
+
+
+@pytest.mark.asyncio
+async def test_input_endpoint_context_only(client: AsyncClient) -> None:
+    """Test input with chat=False -- returns raw context."""
+    resp = await client.post(
+        "/api/v1/input",
+        json={"device_id": "test-device", "text": "Hello Jarvis", "chat": False},
     )
     assert resp.status_code == 200
     data = resp.json()

@@ -32,27 +32,30 @@ async def dispatch_event(
 
 
 async def _handle_user_input(message: dict, device_id: str, brain: Any) -> dict:
-    """Process user input from an agent."""
+    """Process user input: retrieve context, call LLM, return response."""
     text = message.get("text", "")
     if not text:
         return {"event": "error", "detail": "text required"}
 
-    context = await brain.process_input(device_id, text)
+    # Full loop: context retrieval -> LLM call -> memory update
+    llm_result = await brain.chat(device_id, text)
 
-    # Check for routine match
-    routine = context.get("matched_routine")
-    if routine:
+    response_text = llm_result.get("response", "")
+    actions = llm_result.get("actions", [])
+
+    # If LLM returned actions, include them for the agent to execute
+    if actions:
         return {
-            "event": "execute_workflow",
-            "procedure_id": routine.get("id", ""),
-            "name": routine.get("name", ""),
-            "steps": routine.get("steps", []),
-            "context": context,
+            "event": "response",
+            "text": response_text,
+            "tts": True,
+            "actions": actions,
         }
 
     return {
-        "event": "context_ready",
-        "context": context,
+        "event": "response",
+        "text": response_text,
+        "tts": True,
     }
 
 
