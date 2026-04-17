@@ -117,6 +117,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Spotify plugin auto-loads at brain startup
 
 ### Changed
+- LLM now responds in plain text instead of JSON. Natural conversation, no robot output.
+- Actions use inline [ACTION] tags (e.g. `[ACTION] open_app chrome`) parsed from response text
+- Facts use inline [REMEMBER] tags (e.g. `[REMEMBER] User prefers dark mode`) parsed from response text
+- System prompt rewritten: conversational tone, no JSON format instructions
 - ChatEngine rewritten to support 6 LLM providers via OpenAI-compatible API: Groq (free), OpenRouter (free models), Gemini (free), HuggingFace (free), OpenAI (paid), Anthropic (paid)
 - Default provider changed from Anthropic to Groq (free tier, fast inference)
 - Default fallback changed from OpenAI to OpenRouter (free Llama 3.3 70B)

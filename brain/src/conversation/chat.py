@@ -219,44 +219,38 @@ class ChatEngine:
         return response.content[0].text
 
     def _parse_response(self, raw: str) -> dict[str, Any]:
-        """Parse structured JSON from LLM response. Falls back to plain text."""
+        """Parse plain text response. Extracts [ACTION] and [REMEMBER] tags."""
         raw = raw.strip()
 
-        # Handle markdown code blocks
-        if "```" in raw:
-            lines = raw.split("\n")
-            json_lines = []
-            in_block = False
-            for line in lines:
-                if line.strip().startswith("```") and not in_block:
-                    in_block = True
-                    continue
-                if line.strip().startswith("```") and in_block:
-                    break
-                if in_block:
-                    json_lines.append(line)
-            if json_lines:
-                raw = "\n".join(json_lines)
+        response_lines = []
+        actions = []
+        facts = []
 
-        # Try JSON parse
-        try:
-            parsed = json.loads(raw)
-            if isinstance(parsed, dict):
-                return {
-                    "response": parsed.get("response", raw),
-                    "actions": parsed.get("actions", []),
-                    "facts_extracted": parsed.get("facts_extracted", []),
-                    "associations": parsed.get("associations", []),
-                    "topic": parsed.get("topic", ""),
-                }
-        except json.JSONDecodeError:
-            pass
+        for line in raw.split("\n"):
+            stripped = line.strip()
 
-        # Plain text response
+            if stripped.startswith("[ACTION]"):
+                cmd = stripped[8:].strip()
+                parts = cmd.split(None, 1)
+                if parts:
+                    action_type = parts[0]
+                    target = parts[1] if len(parts) > 1 else ""
+                    actions.append({"type": action_type, "target": target, "params": {}})
+
+            elif stripped.startswith("[REMEMBER]"):
+                fact_text = stripped[10:].strip()
+                if fact_text:
+                    facts.append({"content": fact_text, "category": "personal", "confidence": 0.8})
+
+            else:
+                response_lines.append(line)
+
+        response_text = "\n".join(response_lines).strip()
+
         return {
-            "response": raw,
-            "actions": [],
-            "facts_extracted": [],
+            "response": response_text,
+            "actions": actions,
+            "facts_extracted": facts,
             "associations": [],
             "topic": "",
         }
